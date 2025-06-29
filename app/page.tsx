@@ -47,12 +47,12 @@ import {
   BarChart,
   Gauge
 } from 'lucide-react';
-import { ComponentInstaller } from '@/components/monitoring/ComponentInstaller';
+import ComponentInstaller from '@/components/monitoring/ComponentInstaller';
 import { HostSelection } from '@/components/monitoring/HostSelection';
 import { MIBManager } from '@/components/mib/MIBManager';
 import { DeviceMonitoring } from '@/components/monitoring/DeviceMonitoring';
 import { AlertManager } from '@/components/alerts/AlertManager';
-import { ConfigGenerator } from '@/components/config/ConfigGenerator';
+import ConfigGenerator from '@/components/config/ConfigGenerator';
 import { SystemManagement } from '@/components/system/SystemManagement';
 import { RealTimeDashboard } from '@/components/dashboard/RealTimeDashboard';
 
