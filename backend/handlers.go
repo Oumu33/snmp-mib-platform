@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -141,6 +142,12 @@ func getMIBFiles(c *gin.Context) {
 	var mibFiles []MIBFile
 	db.Find(&mibFiles)
 	c.JSON(http.StatusOK, mibFiles)
+}
+
+func getMIBOids(c *gin.Context) {
+	// TODO: Implement actual MIB OID parsing and retrieval
+	// For now, return empty array to prevent frontend errors
+	c.JSON(http.StatusOK, []gin.H{})
 }
 
 func uploadMIBFile(c *gin.Context) {

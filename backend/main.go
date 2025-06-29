@@ -54,6 +54,7 @@ func main() {
 
 		// MIB file management
 		api.GET("/mibs", getMIBFiles)
+		api.GET("/mibs/oids", getMIBOids)
 		api.POST("/mibs/upload", uploadMIBFile)
 		api.DELETE("/mibs/:id", deleteMIBFile)
 		api.POST("/mibs/:id/validate", validateMIBFile)
