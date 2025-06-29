@@ -83,6 +83,25 @@ func testHostConnection(c *gin.Context) {
 	})
 }
 
+func discoverHosts(c *gin.Context) {
+	var req struct {
+		NetworkRange string `json:"network_range"`
+		ScanSSH      bool   `json:"scan_ssh"`
+		ScanSNMP     bool   `json:"scan_snmp"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement network discovery
+	c.JSON(http.StatusOK, gin.H{
+		"status": "scanning",
+		"message": "Network discovery started",
+	})
+}
+
 // Component handlers
 func getComponents(c *gin.Context) {
 	var components []Component
@@ -94,6 +113,7 @@ func installComponent(c *gin.Context) {
 	var req struct {
 		ComponentID string `json:"component_id"`
 		HostID      uint   `json:"host_id"`
+		Version     string `json:"version"`
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -135,6 +155,11 @@ func stopComponent(c *gin.Context) {
 		"id": id,
 		"status": "stopped",
 	})
+}
+
+func getInstallations(c *gin.Context) {
+	// TODO: Implement installation jobs retrieval
+	c.JSON(http.StatusOK, []gin.H{})
 }
 
 // MIB file handlers
@@ -443,5 +468,54 @@ func getSystemHealth(c *gin.Context) {
 			},
 		},
 		"timestamp": time.Now(),
+	})
+}
+
+// SSH Key handlers
+func getSSHKeys(c *gin.Context) {
+	// TODO: Implement SSH key retrieval
+	c.JSON(http.StatusOK, []gin.H{})
+}
+
+func generateSSHKey(c *gin.Context) {
+	var req struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+		Bits int    `json:"bits"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement SSH key generation
+	c.JSON(http.StatusOK, gin.H{
+		"message": "SSH key generated successfully",
+	})
+}
+
+// Settings handlers
+func getSettings(c *gin.Context) {
+	// TODO: Implement settings retrieval
+	c.JSON(http.StatusOK, gin.H{
+		"theme": "dark",
+		"language": "en",
+		"notifications": true,
+		"autoRefresh": true,
+		"refreshInterval": 30,
+	})
+}
+
+func updateSettings(c *gin.Context) {
+	var settings map[string]interface{}
+	if err := c.ShouldBindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement settings update
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Settings updated successfully",
 	})
 }

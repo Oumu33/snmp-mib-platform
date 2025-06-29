@@ -35,6 +35,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	// Health check endpoint
+	r.GET("/health", healthCheck)
+
 	// API routes
 	api := r.Group("/api/v1")
 	{
@@ -44,6 +47,7 @@ func main() {
 		api.PUT("/hosts/:id", updateHost)
 		api.DELETE("/hosts/:id", deleteHost)
 		api.POST("/hosts/:id/test", testHostConnection)
+		api.POST("/hosts/discover", discoverHosts)
 
 		// Component management
 		api.GET("/components", getComponents)
@@ -51,6 +55,7 @@ func main() {
 		api.GET("/components/status/:id", getComponentStatus)
 		api.POST("/components/start/:id", startComponent)
 		api.POST("/components/stop/:id", stopComponent)
+		api.GET("/installations", getInstallations)
 
 		// MIB file management
 		api.GET("/mibs", getMIBFiles)
@@ -88,6 +93,14 @@ func main() {
 		api.POST("/configs/generate", generateConfig)
 		api.POST("/configs/deploy", deployConfig)
 
+		// SSH Key management
+		api.GET("/ssh-keys", getSSHKeys)
+		api.POST("/ssh-keys/generate", generateSSHKey)
+
+		// Settings management
+		api.GET("/settings", getSettings)
+		api.PUT("/settings", updateSettings)
+
 		// System management
 		api.GET("/users", getUsers)
 		api.POST("/users", createUser)
@@ -104,5 +117,7 @@ func healthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  "healthy",
 		"message": "SNMP Monitor Pro API is running",
+		"version": "2.1.0",
+		"timestamp": "2025-01-15T10:00:00Z",
 	})
 }

@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   Activity, 
   Server, 
@@ -56,7 +59,9 @@ import {
   Languages,
   HelpCircle,
   LogOut,
-  Save
+  Save,
+  Info,
+  Loader2
 } from 'lucide-react';
 import ComponentInstaller from '@/components/monitoring/ComponentInstaller';
 import { HostSelection } from '@/components/monitoring/HostSelection';
@@ -81,7 +86,7 @@ export default function Home() {
     networkTraffic: 76
   });
 
-  // Settings state
+  // Settings state with backend integration
   const [settings, setSettings] = useState({
     theme: 'dark',
     language: 'en',
@@ -92,6 +97,70 @@ export default function Home() {
     showTooltips: true,
     enableSounds: false
   });
+
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+
+  // Load settings from backend on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/v1/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(prev => ({ ...prev, ...data }));
+      }
+    } catch (err) {
+      console.error('Error loading settings:', err);
+    }
+  };
+
+  const handleSettingsSave = async () => {
+    setSettingsLoading(true);
+    setSettingsError(null);
+    
+    try {
+      const response = await fetch('/api/v1/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings)
+      });
+
+      if (response.ok) {
+        setShowSettings(false);
+        
+        // Apply theme changes immediately
+        if (settings.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (settings.theme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else {
+          // Auto theme - check system preference
+          if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+        
+        // Show success message
+        alert('Settings saved successfully!');
+      } else {
+        const error = await response.json();
+        setSettingsError(error.message || 'Failed to save settings');
+      }
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      setSettingsError('Error occurred while saving settings');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const quickActions = [
     { 
@@ -126,13 +195,13 @@ export default function Home() {
 
   const recentActivities = [
     { 
-      action: 'Grafana deployed successfully on server-01', 
+      action: 'Grafana v11.3.0 deployed successfully on server-01', 
       timestamp: '2 minutes ago', 
       status: 'success',
       type: 'deployment'
     },
     { 
-      action: 'Node Exporter configuration updated', 
+      action: 'Node Exporter v1.8.2 configuration updated', 
       timestamp: '5 minutes ago', 
       status: 'info',
       type: 'config'
@@ -156,7 +225,7 @@ export default function Home() {
       type: 'mib'
     },
     { 
-      action: 'VictoriaMetrics cluster scaled up', 
+      action: 'VictoriaMetrics v1.97.1 cluster scaled up', 
       timestamp: '20 minutes ago', 
       status: 'success',
       type: 'scaling'
@@ -173,16 +242,6 @@ export default function Home() {
       case 'scaling': return <TrendingUp className="h-3 w-3" />;
       default: return <Activity className="h-3 w-3" />;
     }
-  };
-
-  const handleSettingsSave = () => {
-    // Here you would typically save settings to backend or localStorage
-    console.log('Saving settings:', settings);
-    setShowSettings(false);
-    
-    // Show success message
-    // You could use a toast notification here
-    alert('Settings saved successfully!');
   };
 
   return (
@@ -210,7 +269,7 @@ export default function Home() {
                 <span>24 Devices Online</span>
               </div>
               
-              {/* Settings Dialog */}
+              {/* Enhanced Settings Dialog */}
               <Dialog open={showSettings} onOpenChange={setShowSettings}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
@@ -218,7 +277,7 @@ export default function Home() {
                     Settings
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Settings className="h-5 w-5" />
@@ -229,46 +288,62 @@ export default function Home() {
                     </DialogDescription>
                   </DialogHeader>
                   
-                  <div className="space-y-6 py-4">
+                  <div className="space-y-8 py-6">
+                    {settingsError && (
+                      <Alert className="border-red-500 bg-red-500/10">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-red-400">
+                          {settingsError}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* Appearance Settings */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                         <Palette className="h-5 w-5" />
-                        Appearance
+                        Appearance & Interface
                       </h3>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-slate-300">Theme</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-slate-300">Theme Preference</Label>
                           <select 
                             value={settings.theme}
                             onChange={(e) => setSettings({...settings, theme: e.target.value})}
-                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                           >
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                            <option value="auto">Auto</option>
+                            <option value="dark">Dark Theme</option>
+                            <option value="light">Light Theme</option>
+                            <option value="auto">Auto (System)</option>
                           </select>
+                          <p className="text-xs text-slate-500">Choose your preferred color scheme</p>
                         </div>
                         
-                        <div>
-                          <label className="text-sm font-medium text-slate-300">Language</label>
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-slate-300">Language</Label>
                           <select 
                             value={settings.language}
                             onChange={(e) => setSettings({...settings, language: e.target.value})}
-                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                           >
                             <option value="en">English</option>
-                            <option value="zh">中文</option>
+                            <option value="zh">中文 (Chinese)</option>
                             <option value="es">Español</option>
                             <option value="fr">Français</option>
+                            <option value="de">Deutsch</option>
+                            <option value="ja">日本語</option>
                           </select>
+                          <p className="text-xs text-slate-500">Select your preferred language</p>
                         </div>
                       </div>
                       
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-slate-300">Compact Mode</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                          <div>
+                            <Label className="text-sm font-medium text-slate-300">Compact Mode</Label>
+                            <p className="text-xs text-slate-500">Reduce spacing and padding</p>
+                          </div>
                           <input 
                             type="checkbox" 
                             checked={settings.compactMode}
@@ -277,8 +352,11 @@ export default function Home() {
                           />
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-slate-300">Show Tooltips</label>
+                        <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                          <div>
+                            <Label className="text-sm font-medium text-slate-300">Show Tooltips</Label>
+                            <p className="text-xs text-slate-500">Display helpful tooltips</p>
+                          </div>
                           <input 
                             type="checkbox" 
                             checked={settings.showTooltips}
@@ -290,15 +368,18 @@ export default function Home() {
                     </div>
 
                     {/* Notifications Settings */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                         <Bell className="h-5 w-5" />
-                        Notifications
+                        Notifications & Alerts
                       </h3>
                       
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-slate-300">Enable Notifications</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                          <div>
+                            <Label className="text-sm font-medium text-slate-300">Enable Notifications</Label>
+                            <p className="text-xs text-slate-500">Receive system notifications</p>
+                          </div>
                           <input 
                             type="checkbox" 
                             checked={settings.notifications}
@@ -307,8 +388,11 @@ export default function Home() {
                           />
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-slate-300">Sound Alerts</label>
+                        <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                          <div>
+                            <Label className="text-sm font-medium text-slate-300">Sound Alerts</Label>
+                            <p className="text-xs text-slate-500">Play sounds for alerts</p>
+                          </div>
                           <input 
                             type="checkbox" 
                             checked={settings.enableSounds}
@@ -320,15 +404,18 @@ export default function Home() {
                     </div>
 
                     {/* Performance Settings */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                         <Zap className="h-5 w-5" />
-                        Performance
+                        Performance & Data
                       </h3>
                       
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <label className="text-sm font-medium text-slate-300">Auto Refresh</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
+                          <div>
+                            <Label className="text-sm font-medium text-slate-300">Auto Refresh</Label>
+                            <p className="text-xs text-slate-500">Automatically refresh data</p>
+                          </div>
                           <input 
                             type="checkbox" 
                             checked={settings.autoRefresh}
@@ -337,12 +424,12 @@ export default function Home() {
                           />
                         </div>
                         
-                        <div>
-                          <label className="text-sm font-medium text-slate-300">Refresh Interval (seconds)</label>
+                        <div className="space-y-3">
+                          <Label className="text-sm font-medium text-slate-300">Refresh Interval</Label>
                           <select 
                             value={settings.refreshInterval}
                             onChange={(e) => setSettings({...settings, refreshInterval: Number(e.target.value)})}
-                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                            className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                             disabled={!settings.autoRefresh}
                           >
                             <option value={5}>5 seconds</option>
@@ -351,29 +438,35 @@ export default function Home() {
                             <option value={60}>1 minute</option>
                             <option value={300}>5 minutes</option>
                           </select>
+                          <p className="text-xs text-slate-500">How often to refresh dashboard data</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Security Settings */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
                         <Shield className="h-5 w-5" />
-                        Security
+                        Security & Access
                       </h3>
                       
-                      <div className="space-y-3">
-                        <Button variant="outline" className="w-full border-slate-600 text-slate-300">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
                           <Key className="h-4 w-4 mr-2" />
                           Change Password
                         </Button>
                         
-                        <Button variant="outline" className="w-full border-slate-600 text-slate-300">
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
                           <Lock className="h-4 w-4 mr-2" />
                           Two-Factor Authentication
                         </Button>
                         
-                        <Button variant="outline" className="w-full border-red-600 text-red-400">
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
+                          <Users className="h-4 w-4 mr-2" />
+                          Session Management
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-red-600 text-red-400 justify-start">
                           <LogOut className="h-4 w-4 mr-2" />
                           Sign Out All Sessions
                         </Button>
@@ -381,40 +474,106 @@ export default function Home() {
                     </div>
 
                     {/* System Information */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <HelpCircle className="h-5 w-5" />
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                        <Info className="h-5 w-5" />
                         System Information
                       </h3>
                       
-                      <div className="bg-slate-700/50 rounded-lg p-4 space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Version:</span>
-                          <span className="text-white">v2.1.0</span>
+                      <div className="bg-slate-700/50 rounded-lg p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Platform Version:</span>
+                              <span className="text-white font-semibold">v2.1.0</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Build Date:</span>
+                              <span className="text-white">2025-01-15</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">License Type:</span>
+                              <span className="text-white">Enterprise</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">API Version:</span>
+                              <span className="text-white">v1</span>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Support Status:</span>
+                              <Badge className="bg-green-600 text-white">Active</Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Last Update:</span>
+                              <span className="text-white">2025-01-15</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Database:</span>
+                              <span className="text-white">SQLite</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Backend:</span>
+                              <span className="text-white">Go 1.21+</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Build:</span>
-                          <span className="text-white">2024.01.15</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">License:</span>
-                          <span className="text-white">Enterprise</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Support:</span>
-                          <span className="text-blue-400">Active</span>
-                        </div>
+                      </div>
+                    </div>
+
+                    {/* Advanced Settings */}
+                    <div className="space-y-6">
+                      <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                        <Settings className="h-5 w-5" />
+                        Advanced Configuration
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Settings
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import Settings
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Reset to Defaults
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300 justify-start">
+                          <HelpCircle className="h-4 w-4 mr-2" />
+                          Help & Documentation
+                        </Button>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="flex justify-end space-x-2 pt-4 border-t border-slate-700">
+                  <div className="flex justify-end space-x-3 pt-6 border-t border-slate-700">
                     <Button variant="outline" onClick={() => setShowSettings(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleSettingsSave} className="bg-blue-600 hover:bg-blue-700">
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Settings
+                    <Button 
+                      onClick={handleSettingsSave} 
+                      disabled={settingsLoading}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {settingsLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Settings
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
