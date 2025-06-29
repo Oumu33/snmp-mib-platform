@@ -38,6 +38,9 @@ func main() {
 	// Health check endpoint
 	r.GET("/health", healthCheck)
 
+	// GitHub version checking endpoint
+	r.GET("/api/v1/github/versions", checkGitHubVersions)
+
 	// API routes
 	api := r.Group("/api/v1")
 	{
