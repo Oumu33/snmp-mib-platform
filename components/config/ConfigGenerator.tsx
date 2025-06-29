@@ -53,7 +53,7 @@ import {
   Info
 } from 'lucide-react';
 
-// 从MIB模块获取真实OID数据的接口
+// Interface for getting real OID data from MIB module
 interface MIBOid {
   id: string;
   name: string;
@@ -103,7 +103,7 @@ export default function ConfigGenerator() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 从后端API获取真实的MIB OID数据
+  // Fetch real MIB OID data from backend API
   useEffect(() => {
     fetchMIBOids();
   }, []);
@@ -113,7 +113,7 @@ export default function ConfigGenerator() {
       setLoading(true);
       setError(null);
       
-      // 调用后端API获取已解析的MIB文件中的OID
+      // Call backend API to get parsed OIDs from MIB files
       const response = await fetch('/api/v1/mibs/oids');
       
       if (!response.ok) {
@@ -123,7 +123,7 @@ export default function ConfigGenerator() {
       const data = await response.json();
       
       if (data.length === 0) {
-        setError('没有找到可用的MIB OID。请先上传并解析MIB文件。');
+        setError('No available MIB OIDs found. Please upload and parse MIB files first.');
         setMibOids([]);
       } else {
         setMibOids(data.map((oid: any) => ({
@@ -133,7 +133,7 @@ export default function ConfigGenerator() {
       }
     } catch (err) {
       console.error('Error fetching MIB OIDs:', err);
-      setError('无法获取MIB OID数据。请检查网络连接或联系管理员。');
+      setError('Unable to fetch MIB OID data. Please check network connection or contact administrator.');
       setMibOids([]);
     } finally {
       setLoading(false);
@@ -143,34 +143,34 @@ export default function ConfigGenerator() {
   const configTemplates: ConfigTemplate[] = [
     {
       id: 'snmp-exporter-basic',
-      name: 'SNMP Exporter - 基础监控',
+      name: 'SNMP Exporter - Basic Monitoring',
       type: 'snmp-exporter',
-      description: '基础SNMP监控配置，适用于网络设备',
+      description: 'Basic SNMP monitoring configuration for network devices',
       version: '0.25.0',
-      features: ['系统指标', '接口统计', 'SNMP v2c/v3支持'],
+      features: ['System Metrics', 'Interface Statistics', 'SNMP v2c/v3 Support'],
       requiredOids: [],
       optionalOids: [],
-      configSample: `# SNMP Exporter 基础配置模板`
+      configSample: `# SNMP Exporter Basic Configuration Template`
     },
     {
       id: 'categraf-network',
-      name: 'Categraf - 网络设备监控',
+      name: 'Categraf - Network Device Monitoring',
       type: 'categraf',
-      description: 'Categraf网络设备监控配置',
+      description: 'Categraf network device monitoring configuration',
       version: '0.3.60',
-      features: ['多厂商支持', '接口监控', '性能指标'],
+      features: ['Multi-vendor Support', 'Interface Monitoring', 'Performance Metrics'],
       requiredOids: [],
       optionalOids: [],
-      configSample: `# Categraf SNMP配置模板`
+      configSample: `# Categraf SNMP Configuration Template`
     }
   ];
 
   const generatedConfigs: GeneratedConfig[] = [
     {
       id: '1',
-      name: '核心路由器SNMP配置',
+      name: 'Core Router SNMP Config',
       type: 'snmp-exporter',
-      content: '# 生成的SNMP Exporter配置...',
+      content: '# Generated SNMP Exporter configuration...',
       createdAt: '2024-01-15 14:30:00',
       status: 'deployed',
       targetDevices: ['Core-Router-01', 'Core-Router-02'],
@@ -178,7 +178,7 @@ export default function ConfigGenerator() {
     }
   ];
 
-  // 获取可用的类别和厂商（从真实数据中提取）
+  // Get available categories and vendors (extracted from real data)
   const categories = ['all', ...Array.from(new Set(mibOids.map(oid => oid.category)))];
   const vendors = ['all', ...Array.from(new Set(mibOids.map(oid => oid.vendor)))];
 
@@ -244,7 +244,7 @@ export default function ConfigGenerator() {
 
   const generateConfiguration = () => {
     if (!selectedTemplate || selectedOids.length === 0) {
-      setError('请选择模板和至少一个OID');
+      setError('Please select a template and at least one OID');
       return;
     }
 
@@ -388,7 +388,7 @@ ${oids.map(oid => `  # ${oid.description}
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">可用OIDs</p>
+                <p className="text-sm text-slate-400">Available OIDs</p>
                 <p className="text-2xl font-bold text-blue-400">{mibOids.length}</p>
               </div>
               <Database className="h-8 w-8 text-blue-400" />
@@ -400,7 +400,7 @@ ${oids.map(oid => `  # ${oid.description}
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">已选OIDs</p>
+                <p className="text-sm text-slate-400">Selected OIDs</p>
                 <p className="text-2xl font-bold text-green-400">{selectedOids.length}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-400" />
@@ -412,7 +412,7 @@ ${oids.map(oid => `  # ${oid.description}
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">厂商数量</p>
+                <p className="text-sm text-slate-400">Vendors</p>
                 <p className="text-2xl font-bold text-purple-400">{vendors.length - 1}</p>
               </div>
               <Package className="h-8 w-8 text-purple-400" />
@@ -424,7 +424,7 @@ ${oids.map(oid => `  # ${oid.description}
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">配置模板</p>
+                <p className="text-sm text-slate-400">Templates</p>
                 <p className="text-2xl font-bold text-orange-400">{configTemplates.length}</p>
               </div>
               <Settings className="h-8 w-8 text-orange-400" />
@@ -437,19 +437,19 @@ ${oids.map(oid => `  # ${oid.description}
         <TabsList className="bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="oid-selection">
             <Database className="h-4 w-4 mr-2" />
-            OID选择
+            OID Selection
           </TabsTrigger>
           <TabsTrigger value="templates">
             <FileCode className="h-4 w-4 mr-2" />
-            配置模板
+            Templates
           </TabsTrigger>
           <TabsTrigger value="generator">
             <Settings className="h-4 w-4 mr-2" />
-            配置生成
+            Generator
           </TabsTrigger>
           <TabsTrigger value="configs">
             <Package className="h-4 w-4 mr-2" />
-            已生成配置
+            Generated Configs
           </TabsTrigger>
         </TabsList>
 
@@ -459,14 +459,14 @@ ${oids.map(oid => `  # ${oid.description}
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white">MIB OID选择</CardTitle>
+                  <CardTitle className="text-white">MIB OID Selection</CardTitle>
                   <CardDescription className="text-slate-400">
-                    从已解析的MIB文件中选择OID用于配置生成
+                    Select OIDs from parsed MIB files for configuration generation
                   </CardDescription>
                 </div>
                 <Button onClick={fetchMIBOids} variant="outline" className="border-slate-600 text-slate-300">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  刷新数据
+                  Refresh Data
                 </Button>
               </div>
             </CardHeader>
@@ -474,7 +474,7 @@ ${oids.map(oid => `  # ${oid.description}
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-blue-400 mr-2" />
-                  <span className="text-slate-400">正在加载MIB数据...</span>
+                  <span className="text-slate-400">Loading MIB data...</span>
                 </div>
               ) : error ? (
                 <Alert className="border-yellow-500 bg-yellow-500/10">
@@ -488,7 +488,7 @@ ${oids.map(oid => `  # ${oid.description}
                         className="border-yellow-500 text-yellow-400"
                         onClick={() => setActiveTab('mib-upload')}
                       >
-                        前往MIB管理
+                        Go to MIB Management
                       </Button>
                     </div>
                   </AlertDescription>
@@ -500,7 +500,7 @@ ${oids.map(oid => `  # ${oid.description}
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                          placeholder="搜索OID名称、描述或OID..."
+                          placeholder="Search OID names, descriptions, or OIDs..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10 bg-slate-700 border-slate-600 text-white"
@@ -516,7 +516,7 @@ ${oids.map(oid => `  # ${oid.description}
                       >
                         {vendors.map(vendor => (
                           <option key={vendor} value={vendor}>
-                            {vendor === 'all' ? '所有厂商' : vendor}
+                            {vendor === 'all' ? 'All Vendors' : vendor}
                           </option>
                         ))}
                       </select>
@@ -527,7 +527,7 @@ ${oids.map(oid => `  # ${oid.description}
                       >
                         {categories.map(category => (
                           <option key={category} value={category}>
-                            {category === 'all' ? '所有类别' : category}
+                            {category === 'all' ? 'All Categories' : category}
                           </option>
                         ))}
                       </select>
@@ -537,14 +537,14 @@ ${oids.map(oid => `  # ${oid.description}
                       variant="outline" 
                       className="border-slate-600 text-slate-300"
                     >
-                      清空选择
+                      Clear Selection
                     </Button>
                   </div>
 
-                  {/* 快速选择按钮 */}
+                  {/* Quick selection buttons */}
                   {vendors.length > 1 && (
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-sm text-slate-400 mr-2">快速选择:</span>
+                      <span className="text-sm text-slate-400 mr-2">Quick select:</span>
                       {vendors.filter(v => v !== 'all').map(vendor => (
                         <Button
                           key={vendor}
@@ -553,7 +553,7 @@ ${oids.map(oid => `  # ${oid.description}
                           className="border-slate-600 text-slate-300 text-xs"
                           onClick={() => handleSelectAllByVendor(vendor)}
                         >
-                          选择所有{vendor}
+                          Select all {vendor}
                         </Button>
                       ))}
                     </div>
@@ -567,11 +567,11 @@ ${oids.map(oid => `  # ${oid.description}
             <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-8 text-center">
                 <Database className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-300 mb-2">没有找到匹配的OID</h3>
+                <h3 className="text-lg font-semibold text-slate-300 mb-2">No Matching OIDs Found</h3>
                 <p className="text-slate-400 mb-4">
                   {mibOids.length === 0 
-                    ? '请先上传并解析MIB文件，然后返回此页面选择OID。'
-                    : '请调整搜索条件或筛选器。'
+                    ? 'Please upload and parse MIB files first, then return to this page to select OIDs.'
+                    : 'Please adjust your search criteria or filters.'
                   }
                 </p>
                 {mibOids.length === 0 && (
@@ -579,7 +579,7 @@ ${oids.map(oid => `  # ${oid.description}
                     className="bg-blue-600 hover:bg-blue-700"
                     onClick={() => window.location.href = '#mib-manager'}
                   >
-                    前往MIB管理
+                    Go to MIB Management
                   </Button>
                 )}
               </CardContent>
@@ -629,9 +629,9 @@ ${oids.map(oid => `  # ${oid.description}
                     <p className="text-sm text-slate-300 mb-3">{oid.description}</p>
                     
                     <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
-                      <div><strong>厂商:</strong> {oid.vendor}</div>
-                      <div><strong>MIB文件:</strong> {oid.mibFile}</div>
-                      {oid.unit && <div><strong>单位:</strong> {oid.unit}</div>}
+                      <div><strong>Vendor:</strong> {oid.vendor}</div>
+                      <div><strong>MIB File:</strong> {oid.mibFile}</div>
+                      {oid.unit && <div><strong>Unit:</strong> {oid.unit}</div>}
                     </div>
                   </CardContent>
                 </Card>
@@ -644,9 +644,9 @@ ${oids.map(oid => `  # ${oid.description}
         <TabsContent value="templates" className="space-y-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">配置模板</CardTitle>
+              <CardTitle className="text-white">Configuration Templates</CardTitle>
               <CardDescription className="text-slate-400">
-                选择监控配置模板
+                Choose a template for your monitoring configuration
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -679,7 +679,7 @@ ${oids.map(oid => `  # ${oid.description}
                       
                       <div className="space-y-3">
                         <div>
-                          <p className="text-xs text-slate-500 mb-1">特性:</p>
+                          <p className="text-xs text-slate-500 mb-1">Features:</p>
                           <div className="flex flex-wrap gap-1">
                             {template.features.map((feature, idx) => (
                               <Badge key={idx} variant="outline" className="text-xs border-slate-700 text-slate-400">
@@ -697,7 +697,7 @@ ${oids.map(oid => `  # ${oid.description}
                           className="w-full border-slate-600 text-slate-300"
                         >
                           <Eye className="h-3 w-3 mr-1" />
-                          预览模板
+                          Preview Template
                         </Button>
                       </div>
                     </CardContent>
@@ -712,15 +712,15 @@ ${oids.map(oid => `  # ${oid.description}
         <TabsContent value="generator" className="space-y-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">配置生成器</CardTitle>
+              <CardTitle className="text-white">Configuration Generator</CardTitle>
               <CardDescription className="text-slate-400">
-                基于选择的OID和模板生成完整的监控配置
+                Generate complete monitoring configuration from selected OIDs and template
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">配置名称</Label>
+                  <Label className="text-slate-300">Configuration Name</Label>
                   <Input 
                     placeholder="my-network-config"
                     value={configName}
@@ -729,11 +729,11 @@ ${oids.map(oid => `  # ${oid.description}
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">选择的模板</Label>
+                  <Label className="text-slate-300">Selected Template</Label>
                   <div className="p-2 bg-slate-700 border border-slate-600 rounded-md text-white">
                     {selectedTemplate ? 
-                      configTemplates.find(t => t.id === selectedTemplate)?.name || '无' 
-                      : '未选择模板'
+                      configTemplates.find(t => t.id === selectedTemplate)?.name || 'None' 
+                      : 'No template selected'
                     }
                   </div>
                 </div>
@@ -741,7 +741,7 @@ ${oids.map(oid => `  # ${oid.description}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-slate-300">已选OIDs ({selectedOids.length})</Label>
+                  <Label className="text-slate-300">Selected OIDs ({selectedOids.length})</Label>
                   <div className="max-h-32 overflow-y-auto p-2 bg-slate-700 border border-slate-600 rounded-md">
                     {selectedOids.length > 0 ? (
                       <div className="space-y-1">
@@ -755,24 +755,24 @@ ${oids.map(oid => `  # ${oid.description}
                         })}
                       </div>
                     ) : (
-                      <p className="text-xs text-slate-500">未选择OID</p>
+                      <p className="text-xs text-slate-500">No OIDs selected</p>
                     )}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-slate-300">生成选项</Label>
+                  <Label className="text-slate-300">Generation Options</Label>
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox defaultChecked />
-                      <span className="text-sm text-slate-400">包含使用说明</span>
+                      <span className="text-sm text-slate-400">Include usage instructions</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox defaultChecked />
-                      <span className="text-sm text-slate-400">添加指标描述</span>
+                      <span className="text-sm text-slate-400">Add metric descriptions</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox />
-                      <span className="text-sm text-slate-400">生成Prometheus规则</span>
+                      <span className="text-sm text-slate-400">Generate Prometheus rules</span>
                     </div>
                   </div>
                 </div>
@@ -785,7 +785,7 @@ ${oids.map(oid => `  # ${oid.description}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  生成配置
+                  Generate Configuration
                 </Button>
               </div>
 
@@ -805,9 +805,9 @@ ${oids.map(oid => `  # ${oid.description}
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-white">生成的配置</CardTitle>
+                    <CardTitle className="text-white">Generated Configuration</CardTitle>
                     <CardDescription className="text-slate-400">
-                      可部署的监控配置文件
+                      Ready to deploy monitoring configuration
                     </CardDescription>
                   </div>
                   <div className="flex space-x-2">
@@ -818,7 +818,7 @@ ${oids.map(oid => `  # ${oid.description}
                       className="border-slate-600 text-slate-300"
                     >
                       <Copy className="h-4 w-4 mr-1" />
-                      复制
+                      Copy
                     </Button>
                     <Button 
                       onClick={downloadConfig}
@@ -827,7 +827,7 @@ ${oids.map(oid => `  # ${oid.description}
                       className="border-slate-600 text-slate-300"
                     >
                       <Download className="h-4 w-4 mr-1" />
-                      下载
+                      Download
                     </Button>
                   </div>
                 </div>
@@ -849,14 +849,14 @@ ${oids.map(oid => `  # ${oid.description}
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white">已生成的配置</CardTitle>
+                  <CardTitle className="text-white">Generated Configurations</CardTitle>
                   <CardDescription className="text-slate-400">
-                    管理和部署已生成的配置文件
+                    Manage and deploy your generated configurations
                   </CardDescription>
                 </div>
                 <Button className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  新建配置
+                  New Configuration
                 </Button>
               </div>
             </CardHeader>
@@ -877,23 +877,23 @@ ${oids.map(oid => `  # ${oid.description}
                           config.status === 'deployed' ? 'bg-green-600' :
                           config.status === 'validated' ? 'bg-blue-600' : 'bg-yellow-600'
                         } text-white`}>
-                          {config.status === 'deployed' ? '已部署' : 
-                           config.status === 'validated' ? '已验证' : '草稿'}
+                          {config.status === 'deployed' ? 'Deployed' : 
+                           config.status === 'validated' ? 'Validated' : 'Draft'}
                         </Badge>
                       </div>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3 text-sm">
                       <div>
-                        <p className="text-slate-500">目标设备</p>
-                        <p className="text-white">{config.targetDevices.length} 台设备</p>
+                        <p className="text-slate-500">Target Devices</p>
+                        <p className="text-white">{config.targetDevices.length} devices</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">选择的OIDs</p>
-                        <p className="text-white">{config.selectedOids.length} 个OID</p>
+                        <p className="text-slate-500">Selected OIDs</p>
+                        <p className="text-white">{config.selectedOids.length} OIDs</p>
                       </div>
                       <div>
-                        <p className="text-slate-500">配置类型</p>
+                        <p className="text-slate-500">Configuration Type</p>
                         <p className="text-white">{config.type}</p>
                       </div>
                     </div>

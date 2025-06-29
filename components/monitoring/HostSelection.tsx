@@ -106,7 +106,7 @@ export function HostSelection() {
     sshKeyId: ''
   });
 
-  // 从后端API获取主机数据
+  // Fetch host data from backend API
   useEffect(() => {
     fetchHosts();
     fetchSSHKeys();
@@ -127,7 +127,7 @@ export function HostSelection() {
       setHosts(data || []);
     } catch (err) {
       console.error('Error fetching hosts:', err);
-      setError('无法获取主机数据。请检查网络连接或联系管理员。');
+      setError('Unable to fetch host data. Please check network connection or contact administrator.');
       setHosts([]);
     } finally {
       setLoading(false);
@@ -167,14 +167,14 @@ export function HostSelection() {
         throw new Error('Network scan failed');
       }
 
-      // 扫描完成后刷新主机列表
+      // Refresh host list after scan completes
       setTimeout(() => {
         fetchHosts();
         setIsScanning(false);
       }, 3000);
     } catch (err) {
       console.error('Error during network scan:', err);
-      setError('网络扫描失败。请检查网络范围设置。');
+      setError('Network scan failed. Please check network range settings.');
       setIsScanning(false);
     }
   };
@@ -186,7 +186,7 @@ export function HostSelection() {
             ...h, 
             connectionTest: { 
               status: 'testing', 
-              message: '正在测试连接...', 
+              message: 'Testing connection...', 
               timestamp: new Date().toISOString() 
             } 
           }
@@ -206,7 +206,7 @@ export function HostSelection() {
               ...h, 
               connectionTest: { 
                 status: response.ok ? 'success' : 'failed', 
-                message: result.message || (response.ok ? '连接成功' : '连接失败'), 
+                message: result.message || (response.ok ? 'Connection successful' : 'Connection failed'), 
                 timestamp: new Date().toISOString() 
               },
               status: response.ok ? 'connected' : 'error'
@@ -220,7 +220,7 @@ export function HostSelection() {
               ...h, 
               connectionTest: { 
                 status: 'failed', 
-                message: '连接测试失败', 
+                message: 'Connection test failed', 
                 timestamp: new Date().toISOString() 
               },
               status: 'error'
@@ -262,11 +262,11 @@ export function HostSelection() {
         fetchHosts();
       } else {
         const error = await response.json();
-        setError(error.message || '添加主机失败');
+        setError(error.message || 'Failed to add host');
       }
     } catch (err) {
       console.error('Error adding host:', err);
-      setError('添加主机时发生错误');
+      setError('Error occurred while adding host');
     }
   };
 
@@ -279,11 +279,11 @@ export function HostSelection() {
       if (response.ok) {
         fetchHosts();
       } else {
-        setError('删除主机失败');
+        setError('Failed to delete host');
       }
     } catch (err) {
       console.error('Error deleting host:', err);
-      setError('删除主机时发生错误');
+      setError('Error occurred while deleting host');
     }
   };
 
@@ -305,11 +305,11 @@ export function HostSelection() {
         fetchSSHKeys();
         setShowSSHKeyDialog(false);
       } else {
-        setError('生成SSH密钥失败');
+        setError('Failed to generate SSH key');
       }
     } catch (err) {
       console.error('Error generating SSH key:', err);
-      setError('生成SSH密钥时发生错误');
+      setError('Error occurred while generating SSH key');
     }
   };
 
@@ -350,7 +350,7 @@ export function HostSelection() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">已连接主机</p>
+                <p className="text-sm text-slate-400">Connected Hosts</p>
                 <p className="text-2xl font-bold text-green-400">{connectedHosts}</p>
               </div>
               <Server className="h-8 w-8 text-green-400" />
@@ -362,7 +362,7 @@ export function HostSelection() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">总主机数</p>
+                <p className="text-sm text-slate-400">Total Hosts</p>
                 <p className="text-2xl font-bold text-blue-400">{hosts.length}</p>
               </div>
               <Globe className="h-8 w-8 text-blue-400" />
@@ -374,7 +374,7 @@ export function HostSelection() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">已安装组件</p>
+                <p className="text-sm text-slate-400">Components</p>
                 <p className="text-2xl font-bold text-purple-400">{totalComponents}</p>
               </div>
               <Database className="h-8 w-8 text-purple-400" />
@@ -386,7 +386,7 @@ export function HostSelection() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">SSH密钥</p>
+                <p className="text-sm text-slate-400">SSH Keys</p>
                 <p className="text-2xl font-bold text-yellow-400">{sshKeys.length}</p>
               </div>
               <Key className="h-8 w-8 text-yellow-400" />
@@ -406,7 +406,7 @@ export function HostSelection() {
               className="ml-2 border-red-500 text-red-400"
               onClick={() => setError(null)}
             >
-              关闭
+              Close
             </Button>
           </AlertDescription>
         </Alert>
@@ -416,19 +416,19 @@ export function HostSelection() {
         <TabsList className="bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="discovery">
             <Search className="h-4 w-4 mr-2" />
-            主机发现
+            Host Discovery
           </TabsTrigger>
           <TabsTrigger value="manual">
             <Plus className="h-4 w-4 mr-2" />
-            手动添加
+            Manual Entry
           </TabsTrigger>
           <TabsTrigger value="ssh">
             <Key className="h-4 w-4 mr-2" />
-            SSH管理
+            SSH Management
           </TabsTrigger>
           <TabsTrigger value="monitoring">
             <Monitor className="h-4 w-4 mr-2" />
-            主机监控
+            Host Monitoring
           </TabsTrigger>
         </TabsList>
 
@@ -440,22 +440,22 @@ export function HostSelection() {
                 <div>
                   <CardTitle className="text-white flex items-center">
                     <Network className="h-5 w-5 mr-2" />
-                    网络发现
+                    Network Discovery
                   </CardTitle>
                   <CardDescription className="text-slate-400">
-                    自动发现网络中的主机
+                    Automatically discover hosts on your network
                   </CardDescription>
                 </div>
                 <Button onClick={fetchHosts} variant="outline" className="border-slate-600 text-slate-300">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  刷新列表
+                  Refresh List
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end space-x-4">
                 <div className="flex-1">
-                  <Label htmlFor="scan-range" className="text-slate-300">网络范围</Label>
+                  <Label htmlFor="scan-range" className="text-slate-300">Network Range</Label>
                   <Input 
                     id="scan-range"
                     value={scanRange}
@@ -465,7 +465,7 @@ export function HostSelection() {
                   />
                 </div>
                 <div>
-                  <Label className="text-slate-300">扫描选项</Label>
+                  <Label className="text-slate-300">Scan Options</Label>
                   <div className="flex items-center space-x-4 mt-2">
                     <div className="flex items-center space-x-2">
                       <input type="checkbox" defaultChecked />
@@ -489,12 +489,12 @@ export function HostSelection() {
                   {isScanning ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      扫描中...
+                      Scanning...
                     </>
                   ) : (
                     <>
                       <Search className="h-4 w-4 mr-2" />
-                      开始扫描
+                      Start Scan
                     </>
                   )}
                 </Button>
@@ -503,11 +503,11 @@ export function HostSelection() {
               {isScanning && (
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-400">正在扫描网络范围...</span>
+                    <span className="text-slate-400">Scanning network range...</span>
                     <span className="text-slate-400">65%</span>
                   </div>
                   <Progress value={65} className="h-2" />
-                  <p className="text-xs text-slate-500 mt-1">发现 {hosts.length} 台主机，正在检查服务...</p>
+                  <p className="text-xs text-slate-500 mt-1">Found {hosts.length} hosts, checking services...</p>
                 </div>
               )}
             </CardContent>
@@ -518,14 +518,14 @@ export function HostSelection() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white">发现的主机</CardTitle>
+                  <CardTitle className="text-white">Discovered Hosts</CardTitle>
                   <CardDescription className="text-slate-400">
-                    选择主机进行组件安装和管理
+                    Select hosts for component installation and management
                   </CardDescription>
                 </div>
                 <Button onClick={() => setShowAddHost(true)} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  手动添加
+                  Add Manually
                 </Button>
               </div>
             </CardHeader>
@@ -533,23 +533,23 @@ export function HostSelection() {
               {loading ? (
                 <div className="flex items-center justify-center py-8">
                   <RefreshCw className="h-6 w-6 animate-spin text-blue-400 mr-2" />
-                  <span className="text-slate-400">正在加载主机数据...</span>
+                  <span className="text-slate-400">Loading host data...</span>
                 </div>
               ) : hosts.length === 0 ? (
                 <div className="text-center py-8">
                   <Server className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-300 mb-2">没有发现主机</h3>
+                  <h3 className="text-lg font-semibold text-slate-300 mb-2">No Hosts Found</h3>
                   <p className="text-slate-400 mb-4">
-                    请尝试网络扫描或手动添加主机。
+                    Try network scanning or manually add hosts.
                   </p>
                   <div className="flex justify-center space-x-2">
                     <Button onClick={startScan} className="bg-blue-600 hover:bg-blue-700">
                       <Search className="h-4 w-4 mr-2" />
-                      开始扫描
+                      Start Scan
                     </Button>
                     <Button onClick={() => setShowAddHost(true)} variant="outline" className="border-slate-600 text-slate-300">
                       <Plus className="h-4 w-4 mr-2" />
-                      手动添加
+                      Add Manually
                     </Button>
                   </div>
                 </div>
@@ -579,19 +579,19 @@ export function HostSelection() {
                             host.status === 'connecting' ? 'bg-blue-600' : 
                             host.status === 'error' ? 'bg-red-600' : 'bg-gray-600'
                           } text-white text-xs`}>
-                            {host.status === 'connected' ? '已连接' : 
-                             host.status === 'connecting' ? '连接中' :
-                             host.status === 'error' ? '连接失败' : '未连接'}
+                            {host.status === 'connected' ? 'Connected' : 
+                             host.status === 'connecting' ? 'Connecting' :
+                             host.status === 'error' ? 'Error' : 'Disconnected'}
                           </Badge>
                         </div>
                       </div>
                       
                       <div className="space-y-2 mb-3">
                         <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
-                          <div><strong>系统:</strong> {host.os}</div>
-                          <div><strong>架构:</strong> {host.architecture}</div>
-                          <div><strong>用户:</strong> {host.username}</div>
-                          <div><strong>认证:</strong> {host.authMethod === 'key' ? 'SSH密钥' : '密码'}</div>
+                          <div><strong>OS:</strong> {host.os}</div>
+                          <div><strong>Arch:</strong> {host.architecture}</div>
+                          <div><strong>User:</strong> {host.username}</div>
+                          <div><strong>Auth:</strong> {host.authMethod === 'key' ? 'SSH Key' : 'Password'}</div>
                         </div>
                       </div>
                       
@@ -609,7 +609,7 @@ export function HostSelection() {
                           <div className="flex justify-between text-xs">
                             <span className="text-slate-400 flex items-center">
                               <Monitor className="h-3 w-3 mr-1" />
-                              内存
+                              Memory
                             </span>
                             <span className="text-white">{host.resources.memory}%</span>
                           </div>
@@ -618,7 +618,7 @@ export function HostSelection() {
                           <div className="flex justify-between text-xs">
                             <span className="text-slate-400 flex items-center">
                               <HardDrive className="h-3 w-3 mr-1" />
-                              磁盘
+                              Disk
                             </span>
                             <span className="text-white">{host.resources.disk}%</span>
                           </div>
@@ -659,8 +659,8 @@ export function HostSelection() {
                       )}
                       
                       <div className="flex justify-between items-center text-xs text-slate-500 mb-2">
-                        <span>组件: {host.installedComponents.length}</span>
-                        <span>最后连接: {host.lastSeen}</span>
+                        <span>Components: {host.installedComponents.length}</span>
+                        <span>Last seen: {host.lastSeen}</span>
                       </div>
                       
                       <div className="flex justify-between items-center">
@@ -709,15 +709,15 @@ export function HostSelection() {
         <TabsContent value="manual" className="space-y-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">手动添加主机</CardTitle>
+              <CardTitle className="text-white">Manual Host Configuration</CardTitle>
               <CardDescription className="text-slate-400">
-                手动指定主机详细信息进行管理
+                Manually specify host details for management
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="hostname" className="text-slate-300">主机名</Label>
+                  <Label htmlFor="hostname" className="text-slate-300">Hostname</Label>
                   <Input 
                     id="hostname"
                     value={newHost.hostname}
@@ -727,7 +727,7 @@ export function HostSelection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="ip-address" className="text-slate-300">IP地址</Label>
+                  <Label htmlFor="ip-address" className="text-slate-300">IP Address</Label>
                   <Input 
                     id="ip-address"
                     value={newHost.ip}
@@ -737,7 +737,7 @@ export function HostSelection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="ssh-port" className="text-slate-300">SSH端口</Label>
+                  <Label htmlFor="ssh-port" className="text-slate-300">SSH Port</Label>
                   <Input 
                     id="ssh-port"
                     type="number"
@@ -748,7 +748,7 @@ export function HostSelection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="username" className="text-slate-300">用户名</Label>
+                  <Label htmlFor="username" className="text-slate-300">Username</Label>
                   <Input 
                     id="username"
                     value={newHost.username}
@@ -758,20 +758,20 @@ export function HostSelection() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="auth-method" className="text-slate-300">认证方式</Label>
+                  <Label htmlFor="auth-method" className="text-slate-300">Authentication Method</Label>
                   <select 
                     id="auth-method"
                     value={newHost.authMethod}
                     onChange={(e) => setNewHost({...newHost, authMethod: e.target.value as 'password' | 'key'})}
                     className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                   >
-                    <option value="password">密码</option>
-                    <option value="key">SSH密钥</option>
+                    <option value="password">Password</option>
+                    <option value="key">SSH Key</option>
                   </select>
                 </div>
                 {newHost.authMethod === 'password' ? (
                   <div>
-                    <Label htmlFor="password" className="text-slate-300">密码</Label>
+                    <Label htmlFor="password" className="text-slate-300">Password</Label>
                     <Input 
                       id="password"
                       type="password"
@@ -783,14 +783,14 @@ export function HostSelection() {
                   </div>
                 ) : (
                   <div>
-                    <Label htmlFor="ssh-key" className="text-slate-300">SSH密钥</Label>
+                    <Label htmlFor="ssh-key" className="text-slate-300">SSH Key</Label>
                     <select 
                       id="ssh-key"
                       value={newHost.sshKeyId}
                       onChange={(e) => setNewHost({...newHost, sshKeyId: e.target.value})}
                       className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                     >
-                      <option value="">选择SSH密钥</option>
+                      <option value="">Select SSH Key</option>
                       {sshKeys.map(key => (
                         <option key={key.id} value={key.id}>{key.name}</option>
                       ))}
@@ -804,15 +804,15 @@ export function HostSelection() {
                   variant="outline" 
                   className="border-slate-600 text-slate-300"
                   onClick={() => {
-                    // 测试连接逻辑
+                    // Test connection logic
                   }}
                 >
                   <Target className="h-4 w-4 mr-2" />
-                  测试连接
+                  Test Connection
                 </Button>
                 <Button onClick={addHost} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  添加主机
+                  Add Host
                 </Button>
               </div>
             </CardContent>
@@ -826,15 +826,15 @@ export function HostSelection() {
                 <div>
                   <CardTitle className="text-white flex items-center">
                     <Key className="h-5 w-5 mr-2" />
-                    SSH密钥管理
+                    SSH Key Management
                   </CardTitle>
                   <CardDescription className="text-slate-400">
-                    管理SSH密钥以实现安全的主机连接
+                    Manage SSH keys for secure host connections
                   </CardDescription>
                 </div>
                 <Button onClick={() => setShowSSHKeyDialog(true)} className="bg-blue-600 hover:bg-blue-700">
                   <Plus className="h-4 w-4 mr-2" />
-                  生成密钥
+                  Generate Key
                 </Button>
               </div>
             </CardHeader>
@@ -842,13 +842,13 @@ export function HostSelection() {
               {sshKeys.length === 0 ? (
                 <div className="text-center py-8">
                   <Key className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-300 mb-2">没有SSH密钥</h3>
+                  <h3 className="text-lg font-semibold text-slate-300 mb-2">No SSH Keys</h3>
                   <p className="text-slate-400 mb-4">
-                    生成SSH密钥以实现安全的主机连接。
+                    Generate SSH keys for secure host connections.
                   </p>
                   <Button onClick={() => setShowSSHKeyDialog(true)} className="bg-blue-600 hover:bg-blue-700">
                     <Plus className="h-4 w-4 mr-2" />
-                    生成第一个密钥
+                    Generate First Key
                   </Button>
                 </div>
               ) : (
@@ -860,7 +860,7 @@ export function HostSelection() {
                           <Key className="h-4 w-4 text-blue-400" />
                           <span className="font-semibold text-white">{key.name}</span>
                           <Badge className={`${key.status === 'active' ? 'bg-green-600' : 'bg-gray-600'} text-white text-xs`}>
-                            {key.status === 'active' ? '活跃' : '非活跃'}
+                            {key.status === 'active' ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
                         <div className="flex space-x-2">
@@ -877,8 +877,8 @@ export function HostSelection() {
                       </div>
                       <p className="text-xs text-slate-400 font-mono mb-2">{key.fingerprint}</p>
                       <div className="flex justify-between text-xs text-slate-500">
-                        <span>使用主机: {key.usedByHosts.length}</span>
-                        <span>创建时间: {key.createdAt}</span>
+                        <span>Used by hosts: {key.usedByHosts.length}</span>
+                        <span>Created: {key.createdAt}</span>
                       </div>
                     </div>
                   ))}
@@ -893,10 +893,10 @@ export function HostSelection() {
             <CardHeader>
               <CardTitle className="text-white flex items-center">
                 <Monitor className="h-5 w-5 mr-2" />
-                主机性能监控
+                Host Performance Monitoring
               </CardTitle>
               <CardDescription className="text-slate-400">
-                实时主机资源监控和告警
+                Real-time host resource monitoring and alerts
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -912,7 +912,7 @@ export function HostSelection() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge className="bg-green-600 text-white">在线</Badge>
+                        <Badge className="bg-green-600 text-white">Online</Badge>
                         <Button variant="ghost" size="sm">
                           <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -924,7 +924,7 @@ export function HostSelection() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <Cpu className="h-4 w-4 mr-1" />
-                            CPU使用率
+                            CPU Usage
                           </span>
                           <span className="text-white font-semibold">{host.resources.cpu}%</span>
                         </div>
@@ -935,7 +935,7 @@ export function HostSelection() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <Monitor className="h-4 w-4 mr-1" />
-                            内存
+                            Memory
                           </span>
                           <span className="text-white font-semibold">{host.resources.memory}%</span>
                         </div>
@@ -946,7 +946,7 @@ export function HostSelection() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <HardDrive className="h-4 w-4 mr-1" />
-                            磁盘使用率
+                            Disk Usage
                           </span>
                           <span className="text-white font-semibold">{host.resources.disk}%</span>
                         </div>
@@ -956,9 +956,9 @@ export function HostSelection() {
                     
                     <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-700">
                       <div className="flex space-x-4 text-xs text-slate-500">
-                        <span>运行时间: 45天</span>
-                        <span>负载: 0.8, 0.6, 0.4</span>
-                        <span>组件: {host.installedComponents.length}</span>
+                        <span>Uptime: 45 days</span>
+                        <span>Load: 0.8, 0.6, 0.4</span>
+                        <span>Components: {host.installedComponents.length}</span>
                       </div>
                       <div className="flex space-x-2">
                         <Button size="sm" variant="outline" className="border-slate-600 text-slate-300">
@@ -967,7 +967,7 @@ export function HostSelection() {
                         </Button>
                         <Button size="sm" variant="outline" className="border-slate-600 text-slate-300">
                           <Activity className="h-3 w-3 mr-1" />
-                          指标
+                          Metrics
                         </Button>
                       </div>
                     </div>
@@ -983,15 +983,15 @@ export function HostSelection() {
       <Dialog open={showAddHost} onOpenChange={setShowAddHost}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>添加新主机</DialogTitle>
+            <DialogTitle>Add New Host</DialogTitle>
             <DialogDescription>
-              配置新主机的连接信息
+              Configure connection information for new host
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>主机名</Label>
+                <Label>Hostname</Label>
                 <Input 
                   value={newHost.hostname}
                   onChange={(e) => setNewHost({...newHost, hostname: e.target.value})}
@@ -999,7 +999,7 @@ export function HostSelection() {
                 />
               </div>
               <div>
-                <Label>IP地址</Label>
+                <Label>IP Address</Label>
                 <Input 
                   value={newHost.ip}
                   onChange={(e) => setNewHost({...newHost, ip: e.target.value})}
@@ -1009,10 +1009,10 @@ export function HostSelection() {
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowAddHost(false)}>
-                取消
+                Cancel
               </Button>
               <Button onClick={addHost}>
-                添加主机
+                Add Host
               </Button>
             </div>
           </div>
@@ -1023,18 +1023,18 @@ export function HostSelection() {
       <Dialog open={showSSHKeyDialog} onOpenChange={setShowSSHKeyDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>生成SSH密钥</DialogTitle>
+            <DialogTitle>Generate SSH Key</DialogTitle>
             <DialogDescription>
-              生成新的SSH密钥对用于安全连接
+              Generate new SSH key pair for secure connections
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>密钥名称</Label>
+              <Label>Key Name</Label>
               <Input placeholder="production-key" />
             </div>
             <div>
-              <Label>密钥类型</Label>
+              <Label>Key Type</Label>
               <select className="w-full p-2 border rounded">
                 <option value="rsa">RSA</option>
                 <option value="ed25519">Ed25519</option>
@@ -1042,10 +1042,10 @@ export function HostSelection() {
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowSSHKeyDialog(false)}>
-                取消
+                Cancel
               </Button>
               <Button onClick={generateSSHKey}>
-                生成密钥
+                Generate Key
               </Button>
             </div>
           </div>
