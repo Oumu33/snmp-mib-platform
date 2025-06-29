@@ -143,9 +143,8 @@ export default function ComponentInstaller() {
       setComponents(data || []);
     } catch (err) {
       console.error('Error fetching components:', err);
-      setError('Unable to fetch component data. Please check network connection.');
-      // 使用模拟数据作为后备
-      setComponents(mockComponents);
+      setError('Unable to fetch component data. Please check if backend server is running on port 8080.');
+      setComponents([]);
     } finally {
       setLoading(false);
     }
@@ -158,11 +157,12 @@ export default function ComponentInstaller() {
         const data = await response.json();
         setHosts(data || []);
       } else {
-        setHosts(mockHosts);
+        throw new Error('Failed to fetch hosts');
       }
     } catch (err) {
       console.error('Error fetching hosts:', err);
-      setHosts(mockHosts);
+      setError('Unable to fetch host data. Please ensure backend is running and hosts are configured.');
+      setHosts([]);
     }
   };
 
@@ -177,177 +177,6 @@ export default function ComponentInstaller() {
       console.error('Error fetching installations:', err);
     }
   };
-
-  // 模拟数据
-  const mockComponents: Component[] = [
-    {
-      id: 'node-exporter',
-      name: 'Node Exporter',
-      type: 'collector',
-      description: 'Prometheus exporter for hardware and OS metrics exposed by *NIX kernels',
-      version: '1.8.2',
-      latestVersion: '1.8.2',
-      downloadUrl: 'https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz',
-      configPath: '/etc/node_exporter/node_exporter.yml',
-      serviceName: 'node_exporter',
-      port: 9100,
-      status: 'available',
-      architecture: ['x86_64', 'arm64', 'armv7'],
-      dependencies: [],
-      features: ['System Metrics', 'Hardware Monitoring', 'Process Statistics', 'Filesystem Metrics'],
-      isCluster: false
-    },
-    {
-      id: 'categraf',
-      name: 'Categraf',
-      type: 'collector',
-      description: 'One-stop telemetry collector for metrics, logs and traces',
-      version: '0.3.60',
-      latestVersion: '0.3.60',
-      downloadUrl: 'https://github.com/flashcatcloud/categraf/releases/download/v0.3.60/categraf-v0.3.60-linux-amd64.tar.gz',
-      configPath: '/etc/categraf/conf/config.toml',
-      serviceName: 'categraf',
-      port: 9100,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['Multi-protocol Support', 'SNMP Collection', 'Log Collection', 'Trace Collection'],
-      isCluster: false
-    },
-    {
-      id: 'snmp-exporter',
-      name: 'SNMP Exporter',
-      type: 'collector',
-      description: 'Prometheus exporter for SNMP-enabled devices',
-      version: '0.25.0',
-      latestVersion: '0.25.0',
-      downloadUrl: 'https://github.com/prometheus/snmp_exporter/releases/download/v0.25.0/snmp_exporter-0.25.0.linux-amd64.tar.gz',
-      configPath: '/etc/snmp_exporter/snmp.yml',
-      serviceName: 'snmp_exporter',
-      port: 9116,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['SNMP v1/v2c/v3', 'MIB Support', 'Custom Modules', 'Multi-target'],
-      isCluster: false
-    },
-    {
-      id: 'victoriametrics-single',
-      name: 'VictoriaMetrics Single',
-      type: 'storage',
-      description: 'Fast, cost-effective monitoring solution and time series database',
-      version: '1.97.1',
-      latestVersion: '1.97.1',
-      downloadUrl: 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.97.1/victoria-metrics-linux-amd64-v1.97.1.tar.gz',
-      configPath: '/etc/victoriametrics/victoria-metrics.yml',
-      serviceName: 'victoriametrics',
-      port: 8428,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['High Performance', 'Low Resource Usage', 'PromQL Support', 'Data Compression'],
-      isCluster: false
-    },
-    {
-      id: 'victoriametrics-cluster',
-      name: 'VictoriaMetrics Cluster',
-      type: 'storage',
-      description: 'Horizontally scalable VictoriaMetrics cluster setup',
-      version: '1.97.1',
-      latestVersion: '1.97.1',
-      downloadUrl: 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.97.1/victoria-metrics-linux-amd64-v1.97.1.tar.gz',
-      configPath: '/etc/victoriametrics-cluster/',
-      serviceName: 'victoriametrics-cluster',
-      port: 8480,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['Horizontal Scaling', 'High Availability', 'Load Balancing', 'Data Replication'],
-      isCluster: true,
-      clusterComponents: ['VMStorage', 'VMInsert', 'VMSelect']
-    },
-    {
-      id: 'grafana',
-      name: 'Grafana',
-      type: 'visualization',
-      description: 'Open source analytics and interactive visualization web application',
-      version: '11.3.0',
-      latestVersion: '11.3.0',
-      downloadUrl: 'https://dl.grafana.com/enterprise/release/grafana-enterprise-11.3.0.linux-amd64.tar.gz',
-      configPath: '/etc/grafana/grafana.ini',
-      serviceName: 'grafana-server',
-      port: 3000,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['Rich Dashboards', 'Alerting', 'Plugin System', 'Multi-datasource'],
-      isCluster: false
-    },
-    {
-      id: 'vmalert',
-      name: 'VMAlert',
-      type: 'alerting',
-      description: 'VictoriaMetrics alerting component',
-      version: '1.97.1',
-      latestVersion: '1.97.1',
-      downloadUrl: 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.97.1/vmutils-linux-amd64-v1.97.1.tar.gz',
-      configPath: '/etc/vmalert/alerts.yml',
-      serviceName: 'vmalert',
-      port: 8880,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: ['victoriametrics-single'],
-      features: ['PromQL Alerts', 'Recording Rules', 'Webhook Notifications', 'High Performance'],
-      isCluster: false
-    },
-    {
-      id: 'alertmanager',
-      name: 'Alertmanager',
-      type: 'alerting',
-      description: 'Prometheus Alertmanager handles alerts sent by client applications',
-      version: '0.27.0',
-      latestVersion: '0.27.0',
-      downloadUrl: 'https://github.com/prometheus/alertmanager/releases/download/v0.27.0/alertmanager-0.27.0.linux-amd64.tar.gz',
-      configPath: '/etc/alertmanager/alertmanager.yml',
-      serviceName: 'alertmanager',
-      port: 9093,
-      status: 'available',
-      architecture: ['x86_64', 'arm64'],
-      dependencies: [],
-      features: ['Alert Routing', 'Silencing', 'Inhibition', 'High Availability'],
-      isCluster: false
-    }
-  ];
-
-  const mockHosts: Host[] = [
-    {
-      id: '1',
-      name: 'monitoring-server-01',
-      ip: '192.168.1.10',
-      status: 'connected',
-      os: 'Ubuntu 22.04',
-      architecture: 'x86_64',
-      resources: { cpu: 25, memory: 45, disk: 67 }
-    },
-    {
-      id: '2',
-      name: 'monitoring-server-02',
-      ip: '192.168.1.11',
-      status: 'connected',
-      os: 'CentOS 8',
-      architecture: 'x86_64',
-      resources: { cpu: 15, memory: 32, disk: 45 }
-    },
-    {
-      id: '3',
-      name: 'edge-device-01',
-      ip: '192.168.1.20',
-      status: 'connected',
-      os: 'Ubuntu 20.04',
-      architecture: 'arm64',
-      resources: { cpu: 35, memory: 78, disk: 23 }
-    }
-  ];
 
   const getTypeIcon = (type: Component['type']) => {
     switch (type) {
@@ -390,10 +219,10 @@ export default function ComponentInstaller() {
   const installedComponents = components.filter(c => c.status === 'installed').length;
   const runningInstallations = installations.filter(i => i.status === 'installing').length;
 
-  // 直接安装组件
-  const installComponent = async (component: Component, hostId: string) => {
-    if (!hostId) {
-      setError('Please select a host first');
+  // 安装组件函数
+  const installComponent = async (component: Component) => {
+    if (!selectedHost) {
+      setError('Please select a target host first before installing components.');
       return;
     }
 
@@ -401,7 +230,7 @@ export default function ComponentInstaller() {
       // 更新组件状态为安装中
       setComponents(prev => prev.map(c => 
         c.id === component.id 
-          ? { ...c, status: 'installing', installProgress: 0, hostId, hostName: hosts.find(h => h.id === hostId)?.name }
+          ? { ...c, status: 'installing', installProgress: 0, hostId: selectedHost, hostName: hosts.find(h => h.id === selectedHost)?.name }
           : c
       ));
 
@@ -412,7 +241,7 @@ export default function ComponentInstaller() {
         },
         body: JSON.stringify({
           component_id: component.id,
-          host_id: hostId,
+          host_id: selectedHost,
           version: component.version,
           auto_start: installationSettings.autoStart,
           enable_metrics: installationSettings.enableMetrics,
@@ -423,14 +252,15 @@ export default function ComponentInstaller() {
       if (response.ok) {
         // 模拟安装进度
         simulateInstallation(component.id);
+        setError(null);
       } else {
-        const error = await response.json();
+        const errorData = await response.json();
         setComponents(prev => prev.map(c => 
           c.id === component.id 
             ? { ...c, status: 'failed', installProgress: 0 }
             : c
         ));
-        setError(error.message || 'Installation failed');
+        setError(errorData.message || 'Installation failed');
       }
     } catch (err) {
       console.error('Error installing component:', err);
@@ -439,7 +269,7 @@ export default function ComponentInstaller() {
           ? { ...c, status: 'failed', installProgress: 0 }
           : c
       ));
-      setError('Error occurred during installation');
+      setError('Error occurred during installation. Please check backend connection.');
     }
   };
 
@@ -476,11 +306,22 @@ export default function ComponentInstaller() {
 
   // 卸载组件
   const uninstallComponent = async (componentId: string) => {
-    setComponents(prev => prev.map(c => 
-      c.id === componentId 
-        ? { ...c, status: 'available', hostId: undefined, hostName: undefined, installProgress: 0 }
-        : c
-    ));
+    try {
+      const response = await fetch(`/api/v1/components/${componentId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        setComponents(prev => prev.map(c => 
+          c.id === componentId 
+            ? { ...c, status: 'available', hostId: undefined, hostName: undefined, installProgress: 0 }
+            : c
+        ));
+      }
+    } catch (err) {
+      console.error('Error uninstalling component:', err);
+      setError('Error occurred during uninstallation');
+    }
   };
 
   // 启动/停止组件
@@ -491,7 +332,6 @@ export default function ComponentInstaller() {
       });
 
       if (response.ok) {
-        // 更新组件状态
         console.log(`Component ${componentId} ${action}ed successfully`);
       }
     } catch (err) {
@@ -598,13 +438,13 @@ export default function ComponentInstaller() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-slate-300">Target Host</Label>
+                  <Label className="text-slate-300">Target Host *</Label>
                   <select
                     value={selectedHost}
                     onChange={(e) => setSelectedHost(e.target.value)}
                     className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                   >
-                    <option value="">Select a host...</option>
+                    <option value="">Select a host to enable installation...</option>
                     {connectedHosts.map(host => (
                       <option key={host.id} value={host.id}>
                         {host.name} ({host.ip}) - {host.os}
@@ -612,8 +452,13 @@ export default function ComponentInstaller() {
                     ))}
                   </select>
                   {selectedHost && (
-                    <p className="text-xs text-slate-500 mt-1">
-                      Selected: {hosts.find(h => h.id === selectedHost)?.name}
+                    <p className="text-xs text-green-400 mt-1">
+                      ✓ Selected: {hosts.find(h => h.id === selectedHost)?.name}
+                    </p>
+                  )}
+                  {connectedHosts.length === 0 && (
+                    <p className="text-xs text-red-400 mt-1">
+                      No connected hosts available. Please add and connect hosts first.
                     </p>
                   )}
                 </div>
@@ -647,11 +492,20 @@ export default function ComponentInstaller() {
                 </div>
               </div>
               
-              {!selectedHost && (
+              {!selectedHost && connectedHosts.length > 0 && (
                 <Alert className="border-yellow-500 bg-yellow-500/10">
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-yellow-400">
-                    Please select a target host to enable component installation.
+                    Please select a target host above to enable component installation. Once selected, you can click "Install" on any component below.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {connectedHosts.length === 0 && (
+                <Alert className="border-red-500 bg-red-500/10">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-red-400">
+                    No connected hosts available. Please go to Host Management to add and connect hosts before installing components.
                   </AlertDescription>
                 </Alert>
               )}
@@ -662,8 +516,30 @@ export default function ComponentInstaller() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-3" />
-              <span className="text-slate-400">Loading components...</span>
+              <span className="text-slate-400">Loading components from backend...</span>
             </div>
+          ) : components.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-8 text-center">
+                <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-300 mb-2">No Components Available</h3>
+                <p className="text-slate-400 mb-4">
+                  Unable to load components from backend. Please ensure:
+                </p>
+                <ul className="text-sm text-slate-500 text-left max-w-md mx-auto space-y-1">
+                  <li>• Backend server is running on port 8080</li>
+                  <li>• Database is properly configured</li>
+                  <li>• Network connection is available</li>
+                </ul>
+                <Button 
+                  onClick={fetchComponents} 
+                  className="mt-4 bg-blue-600 hover:bg-blue-700"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Loading
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredComponents.map((component) => (
@@ -783,9 +659,10 @@ export default function ComponentInstaller() {
                         {component.status === 'available' && (
                           <Button 
                             size="sm" 
-                            onClick={() => installComponent(component, selectedHost)}
+                            onClick={() => installComponent(component)}
                             disabled={!selectedHost}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            className={`${selectedHost ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-600 cursor-not-allowed'}`}
+                            title={!selectedHost ? 'Please select a host first' : 'Install component'}
                           >
                             <Download className="h-3 w-3 mr-1" />
                             Install
@@ -836,7 +713,7 @@ export default function ComponentInstaller() {
                             size="sm" 
                             variant="outline" 
                             className="border-red-600 text-red-400"
-                            onClick={() => installComponent(component, selectedHost)}
+                            onClick={() => installComponent(component)}
                             disabled={!selectedHost}
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />

@@ -83,20 +83,13 @@ SNMP Monitor Pro is a comprehensive enterprise-grade network monitoring platform
 - Go 1.21+
 - Git
 
-#### Frontend Setup
+#### 1. Clone Repository
 ```bash
-# Clone repository
-git clone <repository-url>
+git clone https://github.com/your-username/snmp-monitor-pro.git
 cd snmp-monitor-pro
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
 ```
 
-#### Backend Setup
+#### 2. Backend Setup
 ```bash
 # Navigate to backend directory
 cd backend
@@ -108,74 +101,169 @@ go mod tidy
 go run .
 ```
 
-#### Access Application
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
+The backend will start on `http://localhost:8080`
+
+#### 3. Frontend Setup
+```bash
+# Open new terminal and navigate to project root
+cd snmp-monitor-pro
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The frontend will start on `http://localhost:3000`
+
+#### 4. Production Build
+```bash
+# Build frontend for production
+npm run build
+
+# Start production server
+npm start
+```
 
 ### 📖 Usage Guide
 
-#### 1. Host Management
-1. Navigate to **Component Installer** → **Host Management**
-2. Add remote hosts with SSH credentials
+#### 1. Initial Setup
+1. **Start Backend**: Ensure Go backend is running on port 8080
+2. **Access Frontend**: Open http://localhost:3000 in your browser
+3. **Check System Health**: Verify all components are healthy in the dashboard
+
+#### 2. Host Management
+1. Navigate to **Component Installer** → **Host Discovery**
+2. Add remote hosts with SSH credentials:
+   - **Hostname**: server.example.com
+   - **IP Address**: 192.168.1.100
+   - **SSH Port**: 22 (default)
+   - **Username**: root or your user
+   - **Authentication**: Password or SSH Key
 3. Test connections and verify host status
 4. Configure SSH keys for secure access
 
-#### 2. Component Installation
-1. Select target host from connected hosts
-2. Choose monitoring components to install
-3. Configure component-specific settings
-4. Monitor installation progress in real-time
+#### 3. Component Installation
+1. Go to **Component Installer** → **Component Library**
+2. **Select Target Host** from the dropdown (required)
+3. Browse available components:
+   - **Data Collectors**: Node Exporter, Categraf, SNMP Exporter
+   - **Storage Systems**: VictoriaMetrics Single/Cluster
+   - **Visualization**: Grafana
+   - **Alerting**: VMAlert, Alertmanager
+4. Click **Install** button on desired components
+5. Monitor installation progress in real-time
+6. Manage installed components (Start/Stop/Remove)
 
-#### 3. MIB File Management
-1. Upload individual MIB files or archives
-2. Configure server paths for automatic sync
-3. Validate and parse MIB files
-4. Organize by vendor and category
+#### 4. MIB File Management
+1. Navigate to **MIB Manager**
+2. **Upload MIB Files**:
+   - Single files (.mib, .txt)
+   - Archives (.zip, .tar.gz, .rar)
+3. **Configure Server Paths** for automatic sync
+4. **Validate and Parse** MIB files
+5. **Organize by Vendor** and category
+6. **Extract OIDs** for configuration generation
 
-#### 4. Device Monitoring
-1. Discover network devices automatically
-2. Configure SNMP settings (community, version)
-3. Group devices logically
-4. Apply monitoring templates
+#### 5. Device Monitoring
+1. Go to **Device Monitoring**
+2. **Auto-discover** network devices:
+   - Set network range (e.g., 192.168.1.0/24)
+   - Configure SNMP community string
+   - Select SNMP version (v1/v2c/v3)
+3. **Manual device addition**:
+   - Device name and IP
+   - SNMP configuration
+   - Device type and location
+4. **Group devices** logically
+5. **Apply monitoring templates**
 
-#### 5. Alert Configuration
-1. Create device-specific alert rules
-2. Configure metric thresholds
-3. Set up notification channels
-4. Test alert delivery
+#### 6. Alert Configuration
+1. Navigate to **Alert Manager**
+2. **Create Alert Rules**:
+   - Select target devices
+   - Define metric thresholds
+   - Set severity levels
+3. **Configure Notifications**:
+   - Email (SMTP)
+   - Slack webhooks
+   - SMS (Twilio)
+   - Custom webhooks
+4. **Test alert delivery**
 
-#### 6. Configuration Management
-1. Generate monitoring configurations
-2. Validate configuration syntax
-3. Deploy to target hosts
-4. Monitor deployment status
+#### 7. Configuration Management
+1. Go to **Config Generator**
+2. **Select OIDs** from parsed MIB files
+3. **Choose configuration template**:
+   - SNMP Exporter
+   - Categraf
+   - Prometheus
+4. **Generate configuration** files
+5. **Deploy to target hosts** via SSH
+6. **Monitor deployment** status
 
 ### 🔧 API Documentation
 
 #### Host Management
-```
-GET    /api/v1/hosts              # List hosts
-POST   /api/v1/hosts              # Create host
-PUT    /api/v1/hosts/:id          # Update host
-DELETE /api/v1/hosts/:id          # Delete host
-POST   /api/v1/hosts/:id/test     # Test connection
+```bash
+# List all hosts
+GET /api/v1/hosts
+
+# Create new host
+POST /api/v1/hosts
+{
+  "name": "server-01",
+  "ip": "192.168.1.100",
+  "ssh_port": 22,
+  "username": "root",
+  "auth_method": "password",
+  "password": "your-password"
+}
+
+# Test host connection
+POST /api/v1/hosts/:id/test
+
+# Delete host
+DELETE /api/v1/hosts/:id
 ```
 
 #### Component Management
-```
-GET    /api/v1/components         # List components
-POST   /api/v1/components/install # Install component
-GET    /api/v1/components/status/:id # Get status
-POST   /api/v1/components/start/:id  # Start component
-POST   /api/v1/components/stop/:id   # Stop component
+```bash
+# List available components
+GET /api/v1/components
+
+# Install component
+POST /api/v1/components/install
+{
+  "component_id": "node-exporter",
+  "host_id": "1",
+  "version": "1.8.2",
+  "auto_start": true
+}
+
+# Get component status
+GET /api/v1/components/status/:id
+
+# Start/Stop component
+POST /api/v1/components/start/:id
+POST /api/v1/components/stop/:id
 ```
 
 #### MIB Management
-```
-GET    /api/v1/mibs               # List MIB files
-POST   /api/v1/mibs/upload        # Upload MIB file
-DELETE /api/v1/mibs/:id           # Delete MIB file
-POST   /api/v1/mibs/:id/validate  # Validate MIB
+```bash
+# List MIB files
+GET /api/v1/mibs
+
+# Upload MIB file
+POST /api/v1/mibs/upload
+Content-Type: multipart/form-data
+
+# Get parsed OIDs
+GET /api/v1/mibs/oids
+
+# Validate MIB file
+POST /api/v1/mibs/:id/validate
 ```
 
 ### 🛠️ Development
@@ -184,33 +272,122 @@ POST   /api/v1/mibs/:id/validate  # Validate MIB
 ```
 snmp-monitor-pro/
 ├── app/                    # Next.js app directory
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Main dashboard
 ├── components/             # React components
 │   ├── alerts/            # Alert management
 │   ├── config/            # Configuration generator
 │   ├── dashboard/         # Real-time dashboard
 │   ├── mib/              # MIB management
-│   ├── monitoring/        # Device monitoring
+│   ├── monitoring/        # Device monitoring & installer
 │   ├── system/           # System management
-│   └── ui/               # UI components
+│   └── ui/               # UI components (shadcn/ui)
 ├── backend/               # Go backend
 │   ├── main.go           # Main server
 │   ├── models.go         # Data models
 │   ├── handlers.go       # API handlers
 │   ├── ssh.go            # SSH client
 │   └── mib.go            # MIB management
-└── lib/                  # Utility functions
+├── lib/                  # Utility functions
+└── public/               # Static assets
 ```
 
-#### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+#### Adding New Components
+1. **Define Component** in backend/models.go
+2. **Add Installation Logic** in backend/handlers.go
+3. **Update Frontend** component list
+4. **Add Configuration Templates**
+5. **Update Documentation**
+
+#### Database Schema
+The platform uses SQLite with the following main tables:
+- **hosts**: Remote host information
+- **components**: Available monitoring components
+- **mib_files**: Uploaded MIB files
+- **devices**: Network devices
+- **alerts**: Alert rules and status
+- **configs**: Configuration templates
+- **users**: User accounts
+- **audit_logs**: System audit trail
+
+### 🔐 Security Features
+
+- **JWT Authentication**: Secure API access
+- **SSH Key Management**: Centralized key storage
+- **Role-based Access**: Admin, Operator, Viewer roles
+- **Audit Logging**: Complete activity tracking
+- **Encrypted Storage**: Sensitive data encryption
+
+### 📊 Monitoring Stack Integration
+
+#### Prometheus Ecosystem
+- **Node Exporter**: System metrics collection
+- **SNMP Exporter**: Network device monitoring
+- **Alertmanager**: Alert routing and notifications
+
+#### VictoriaMetrics
+- **Single Node**: High-performance time series database
+- **Cluster Mode**: Horizontally scalable deployment
+- **VMAlert**: Fast alerting engine
+
+#### Grafana
+- **Dashboard Creation**: Rich visualization
+- **Data Source Integration**: Multiple backend support
+- **Alert Visualization**: Integrated alerting
+
+### 🚨 Troubleshooting
+
+#### Common Issues
+
+1. **Backend Connection Failed**
+   ```bash
+   # Check if backend is running
+   curl http://localhost:8080/health
+   
+   # Restart backend
+   cd backend && go run .
+   ```
+
+2. **No Hosts Available**
+   - Ensure SSH connectivity to target hosts
+   - Verify credentials and network access
+   - Check firewall settings
+
+3. **Component Installation Failed**
+   - Verify host architecture compatibility
+   - Check SSH permissions
+   - Review installation logs
+
+4. **MIB Upload Issues**
+   - Ensure file format is correct (.mib, .txt)
+   - Check file size limits
+   - Verify MIB syntax
+
+#### Debug Mode
+```bash
+# Enable debug logging
+export DEBUG=true
+go run .
+```
 
 ### 📄 License
 
 MIT License - see LICENSE file for details
+
+### 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### 📞 Support
+
+- **Documentation**: [Wiki](https://github.com/your-username/snmp-monitor-pro/wiki)
+- **Issues**: [GitHub Issues](https://github.com/your-username/snmp-monitor-pro/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-username/snmp-monitor-pro/discussions)
 
 ---
 
@@ -293,20 +470,13 @@ SNMP Monitor Pro是一个全面的企业级网络监控平台，提供智能SNMP
 - Go 1.21+
 - Git
 
-#### 前端设置
+#### 1. 克隆仓库
 ```bash
-# 克隆仓库
-git clone <repository-url>
+git clone https://github.com/your-username/snmp-monitor-pro.git
 cd snmp-monitor-pro
-
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
 ```
 
-#### 后端设置
+#### 2. 后端设置
 ```bash
 # 进入后端目录
 cd backend
@@ -318,74 +488,169 @@ go mod tidy
 go run .
 ```
 
-#### 访问应用
-- 前端: http://localhost:3000
-- 后端API: http://localhost:8080
+后端将在 `http://localhost:8080` 启动
+
+#### 3. 前端设置
+```bash
+# 打开新终端并导航到项目根目录
+cd snmp-monitor-pro
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+```
+
+前端将在 `http://localhost:3000` 启动
+
+#### 4. 生产环境构建
+```bash
+# 构建前端生产版本
+npm run build
+
+# 启动生产服务器
+npm start
+```
 
 ### 📖 使用指南
 
-#### 1. 主机管理
-1. 导航到 **组件安装器** → **主机管理**
-2. 添加带有SSH凭据的远程主机
+#### 1. 初始设置
+1. **启动后端**: 确保Go后端在8080端口运行
+2. **访问前端**: 在浏览器中打开 http://localhost:3000
+3. **检查系统健康**: 在仪表板中验证所有组件健康状态
+
+#### 2. 主机管理
+1. 导航到 **组件安装器** → **主机发现**
+2. 添加带有SSH凭据的远程主机：
+   - **主机名**: server.example.com
+   - **IP地址**: 192.168.1.100
+   - **SSH端口**: 22（默认）
+   - **用户名**: root或您的用户
+   - **认证方式**: 密码或SSH密钥
 3. 测试连接并验证主机状态
 4. 配置SSH密钥以实现安全访问
 
-#### 2. 组件安装
-1. 从已连接的主机中选择目标主机
-2. 选择要安装的监控组件
-3. 配置组件特定设置
-4. 实时监控安装进度
+#### 3. 组件安装
+1. 转到 **组件安装器** → **组件库**
+2. **选择目标主机**（必需）
+3. 浏览可用组件：
+   - **数据采集器**: Node Exporter、Categraf、SNMP Exporter
+   - **存储系统**: VictoriaMetrics单机/集群版
+   - **可视化**: Grafana
+   - **告警**: VMAlert、Alertmanager
+4. 点击所需组件的**安装**按钮
+5. 实时监控安装进度
+6. 管理已安装的组件（启动/停止/移除）
 
-#### 3. MIB文件管理
-1. 上传单个MIB文件或压缩包
-2. 配置服务器路径以实现自动同步
-3. 验证和解析MIB文件
-4. 按厂商和类别组织
+#### 4. MIB文件管理
+1. 导航到 **MIB管理器**
+2. **上传MIB文件**：
+   - 单个文件（.mib、.txt）
+   - 压缩包（.zip、.tar.gz、.rar）
+3. **配置服务器路径**以实现自动同步
+4. **验证和解析**MIB文件
+5. **按厂商分类**组织
+6. **提取OID**用于配置生成
 
-#### 4. 设备监控
-1. 自动发现网络设备
-2. 配置SNMP设置（团体字符串、版本）
-3. 逻辑分组设备
-4. 应用监控模板
+#### 5. 设备监控
+1. 转到 **设备监控**
+2. **自动发现**网络设备：
+   - 设置网络范围（如192.168.1.0/24）
+   - 配置SNMP团体字符串
+   - 选择SNMP版本（v1/v2c/v3）
+3. **手动添加设备**：
+   - 设备名称和IP
+   - SNMP配置
+   - 设备类型和位置
+4. **逻辑分组**设备
+5. **应用监控模板**
 
-#### 5. 告警配置
-1. 创建设备特定的告警规则
-2. 配置指标阈值
-3. 设置通知渠道
-4. 测试告警传递
+#### 6. 告警配置
+1. 导航到 **告警管理器**
+2. **创建告警规则**：
+   - 选择目标设备
+   - 定义指标阈值
+   - 设置严重级别
+3. **配置通知**：
+   - 邮件（SMTP）
+   - Slack webhook
+   - 短信（Twilio）
+   - 自定义webhook
+4. **测试告警传递**
 
-#### 6. 配置管理
-1. 生成监控配置
-2. 验证配置语法
-3. 部署到目标主机
-4. 监控部署状态
+#### 7. 配置管理
+1. 转到 **配置生成器**
+2. **选择OID**从解析的MIB文件
+3. **选择配置模板**：
+   - SNMP Exporter
+   - Categraf
+   - Prometheus
+4. **生成配置**文件
+5. **通过SSH部署**到目标主机
+6. **监控部署**状态
 
 ### 🔧 API文档
 
 #### 主机管理
-```
-GET    /api/v1/hosts              # 获取主机列表
-POST   /api/v1/hosts              # 创建主机
-PUT    /api/v1/hosts/:id          # 更新主机
-DELETE /api/v1/hosts/:id          # 删除主机
-POST   /api/v1/hosts/:id/test     # 测试连接
+```bash
+# 获取所有主机
+GET /api/v1/hosts
+
+# 创建新主机
+POST /api/v1/hosts
+{
+  "name": "server-01",
+  "ip": "192.168.1.100",
+  "ssh_port": 22,
+  "username": "root",
+  "auth_method": "password",
+  "password": "your-password"
+}
+
+# 测试主机连接
+POST /api/v1/hosts/:id/test
+
+# 删除主机
+DELETE /api/v1/hosts/:id
 ```
 
 #### 组件管理
-```
-GET    /api/v1/components         # 获取组件列表
-POST   /api/v1/components/install # 安装组件
-GET    /api/v1/components/status/:id # 获取状态
-POST   /api/v1/components/start/:id  # 启动组件
-POST   /api/v1/components/stop/:id   # 停止组件
+```bash
+# 获取可用组件
+GET /api/v1/components
+
+# 安装组件
+POST /api/v1/components/install
+{
+  "component_id": "node-exporter",
+  "host_id": "1",
+  "version": "1.8.2",
+  "auto_start": true
+}
+
+# 获取组件状态
+GET /api/v1/components/status/:id
+
+# 启动/停止组件
+POST /api/v1/components/start/:id
+POST /api/v1/components/stop/:id
 ```
 
 #### MIB管理
-```
-GET    /api/v1/mibs               # 获取MIB文件列表
-POST   /api/v1/mibs/upload        # 上传MIB文件
-DELETE /api/v1/mibs/:id           # 删除MIB文件
-POST   /api/v1/mibs/:id/validate  # 验证MIB
+```bash
+# 获取MIB文件列表
+GET /api/v1/mibs
+
+# 上传MIB文件
+POST /api/v1/mibs/upload
+Content-Type: multipart/form-data
+
+# 获取解析的OID
+GET /api/v1/mibs/oids
+
+# 验证MIB文件
+POST /api/v1/mibs/:id/validate
 ```
 
 ### 🛠️ 开发
@@ -394,30 +659,119 @@ POST   /api/v1/mibs/:id/validate  # 验证MIB
 ```
 snmp-monitor-pro/
 ├── app/                    # Next.js应用目录
+│   ├── globals.css        # 全局样式
+│   ├── layout.tsx         # 根布局
+│   └── page.tsx           # 主仪表板
 ├── components/             # React组件
 │   ├── alerts/            # 告警管理
 │   ├── config/            # 配置生成器
 │   ├── dashboard/         # 实时仪表板
 │   ├── mib/              # MIB管理
-│   ├── monitoring/        # 设备监控
+│   ├── monitoring/        # 设备监控和安装器
 │   ├── system/           # 系统管理
-│   └── ui/               # UI组件
+│   └── ui/               # UI组件（shadcn/ui）
 ├── backend/               # Go后端
 │   ├── main.go           # 主服务器
 │   ├── models.go         # 数据模型
 │   ├── handlers.go       # API处理器
 │   ├── ssh.go            # SSH客户端
 │   └── mib.go            # MIB管理
-└── lib/                  # 工具函数
+├── lib/                  # 工具函数
+└── public/               # 静态资源
 ```
 
-#### 贡献
-1. Fork仓库
-2. 创建功能分支
-3. 进行更改
-4. 如适用，添加测试
-5. 提交拉取请求
+#### 添加新组件
+1. **定义组件**在backend/models.go中
+2. **添加安装逻辑**在backend/handlers.go中
+3. **更新前端**组件列表
+4. **添加配置模板**
+5. **更新文档**
+
+#### 数据库架构
+平台使用SQLite，主要表包括：
+- **hosts**: 远程主机信息
+- **components**: 可用监控组件
+- **mib_files**: 上传的MIB文件
+- **devices**: 网络设备
+- **alerts**: 告警规则和状态
+- **configs**: 配置模板
+- **users**: 用户账户
+- **audit_logs**: 系统审计跟踪
+
+### 🔐 安全特性
+
+- **JWT认证**: 安全的API访问
+- **SSH密钥管理**: 集中式密钥存储
+- **基于角色的访问**: 管理员、操作员、查看者角色
+- **审计日志**: 完整的活动跟踪
+- **加密存储**: 敏感数据加密
+
+### 📊 监控栈集成
+
+#### Prometheus生态系统
+- **Node Exporter**: 系统指标收集
+- **SNMP Exporter**: 网络设备监控
+- **Alertmanager**: 告警路由和通知
+
+#### VictoriaMetrics
+- **单节点**: 高性能时间序列数据库
+- **集群模式**: 水平可扩展部署
+- **VMAlert**: 快速告警引擎
+
+#### Grafana
+- **仪表板创建**: 丰富的可视化
+- **数据源集成**: 多后端支持
+- **告警可视化**: 集成告警
+
+### 🚨 故障排除
+
+#### 常见问题
+
+1. **后端连接失败**
+   ```bash
+   # 检查后端是否运行
+   curl http://localhost:8080/health
+   
+   # 重启后端
+   cd backend && go run .
+   ```
+
+2. **没有可用主机**
+   - 确保SSH连接到目标主机
+   - 验证凭据和网络访问
+   - 检查防火墙设置
+
+3. **组件安装失败**
+   - 验证主机架构兼容性
+   - 检查SSH权限
+   - 查看安装日志
+
+4. **MIB上传问题**
+   - 确保文件格式正确（.mib、.txt）
+   - 检查文件大小限制
+   - 验证MIB语法
+
+#### 调试模式
+```bash
+# 启用调试日志
+export DEBUG=true
+go run .
+```
 
 ### 📄 许可证
 
 MIT许可证 - 详情请参阅LICENSE文件
+
+### 🤝 贡献
+
+1. Fork仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 打开Pull Request
+
+### 📞 支持
+
+- **文档**: [Wiki](https://github.com/your-username/snmp-monitor-pro/wiki)
+- **问题**: [GitHub Issues](https://github.com/your-username/snmp-monitor-pro/issues)
+- **讨论**: [GitHub Discussions](https://github.com/your-username/snmp-monitor-pro/discussions)
