@@ -45,8 +45,14 @@ import {
   Loader2,
   Plus,
   X,
-  Check
+  Check,
+  Users,
+  Key,
+  Terminal,
+  Edit,
+  Wifi
 } from 'lucide-react';
+import { HostSelection } from './HostSelection';
 
 interface Component {
   id: string;
@@ -73,6 +79,9 @@ interface Component {
   cpuUsage?: number;
   isCluster?: boolean;
   clusterComponents?: string[];
+  githubRepo?: string;
+  documentation?: string;
+  configTemplate?: string;
 }
 
 interface Host {
@@ -87,6 +96,11 @@ interface Host {
     memory: number;
     disk: number;
   };
+  sshPort: number;
+  username: string;
+  authMethod: 'password' | 'key';
+  lastSeen: string;
+  installedComponents: string[];
 }
 
 interface InstallationJob {
@@ -103,6 +117,177 @@ interface InstallationJob {
   error?: string;
 }
 
+// 完整的组件列表 - 从GitHub动态获取版本信息
+const COMPONENT_DEFINITIONS = [
+  // Data Collectors
+  {
+    id: 'node-exporter',
+    name: 'Node Exporter',
+    type: 'collector' as const,
+    description: 'Prometheus exporter for hardware and OS metrics exposed by *NIX kernels',
+    serviceName: 'node_exporter',
+    port: 9100,
+    architecture: ['x86_64', 'arm64', 'armv7'],
+    dependencies: [],
+    features: ['System Metrics', 'Hardware Monitoring', 'Process Stats', 'Filesystem Stats'],
+    githubRepo: 'prometheus/node_exporter',
+    configPath: '/etc/node_exporter/node_exporter.yml',
+    documentation: 'https://github.com/prometheus/node_exporter'
+  },
+  {
+    id: 'categraf',
+    name: 'Categraf',
+    type: 'collector' as const,
+    description: 'One-stop telemetry collector for metrics, logs and traces',
+    serviceName: 'categraf',
+    port: 9100,
+    architecture: ['x86_64', 'arm64', 'armv7'],
+    dependencies: [],
+    features: ['Multi-protocol Support', 'SNMP Collection', 'Log Collection', 'Trace Collection'],
+    githubRepo: 'flashcatcloud/categraf',
+    configPath: '/etc/categraf/conf.d/',
+    documentation: 'https://github.com/flashcatcloud/categraf'
+  },
+  {
+    id: 'snmp-exporter',
+    name: 'SNMP Exporter',
+    type: 'collector' as const,
+    description: 'SNMP Exporter for Prometheus to monitor network devices',
+    serviceName: 'snmp_exporter',
+    port: 9116,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: [],
+    features: ['SNMP v1/v2c/v3', 'MIB Support', 'Network Devices', 'Custom OIDs'],
+    githubRepo: 'prometheus/snmp_exporter',
+    configPath: '/etc/snmp_exporter/snmp.yml',
+    documentation: 'https://github.com/prometheus/snmp_exporter'
+  },
+  {
+    id: 'vmAgent',
+    name: 'VMAgent',
+    type: 'collector' as const,
+    description: 'VictoriaMetrics agent for collecting and forwarding metrics',
+    serviceName: 'vmagent',
+    port: 8429,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: [],
+    features: ['Remote Write', 'Service Discovery', 'Relabeling', 'Deduplication'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/vmagent/vmagent.yml',
+    documentation: 'https://docs.victoriametrics.com/vmagent.html'
+  },
+
+  // Storage Systems
+  {
+    id: 'victoriametrics-single',
+    name: 'VictoriaMetrics Single',
+    type: 'storage' as const,
+    description: 'Fast, cost-effective monitoring solution and time series database',
+    serviceName: 'victoria-metrics',
+    port: 8428,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: [],
+    features: ['High Performance', 'Low Resource Usage', 'PromQL Support', 'Long-term Storage'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/victoria-metrics/victoria-metrics.yml',
+    documentation: 'https://docs.victoriametrics.com/'
+  },
+  {
+    id: 'vmStorage',
+    name: 'VMStorage',
+    type: 'storage' as const,
+    description: 'VictoriaMetrics cluster storage component',
+    serviceName: 'vmstorage',
+    port: 8482,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: [],
+    features: ['Cluster Storage', 'Data Replication', 'Horizontal Scaling', 'Data Retention'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/vmstorage/vmstorage.yml',
+    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
+    isCluster: true,
+    clusterComponents: ['VMInsert', 'VMSelect']
+  },
+  {
+    id: 'vmInsert',
+    name: 'VMInsert',
+    type: 'storage' as const,
+    description: 'VictoriaMetrics cluster insert component',
+    serviceName: 'vminsert',
+    port: 8480,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: ['vmStorage'],
+    features: ['Data Ingestion', 'Load Balancing', 'Deduplication', 'Relabeling'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/vminsert/vminsert.yml',
+    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
+    isCluster: true,
+    clusterComponents: ['VMStorage', 'VMSelect']
+  },
+  {
+    id: 'vmSelect',
+    name: 'VMSelect',
+    type: 'storage' as const,
+    description: 'VictoriaMetrics cluster select component',
+    serviceName: 'vmselect',
+    port: 8481,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: ['vmStorage'],
+    features: ['Query Processing', 'PromQL Support', 'Data Aggregation', 'Caching'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/vmselect/vmselect.yml',
+    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
+    isCluster: true,
+    clusterComponents: ['VMStorage', 'VMInsert']
+  },
+
+  // Visualization
+  {
+    id: 'grafana',
+    name: 'Grafana',
+    type: 'visualization' as const,
+    description: 'Open source analytics and interactive visualization web application',
+    serviceName: 'grafana-server',
+    port: 3000,
+    architecture: ['x86_64', 'arm64', 'armv7'],
+    dependencies: [],
+    features: ['Rich Dashboards', 'Alerting', 'Data Sources', 'Plugins', 'User Management'],
+    githubRepo: 'grafana/grafana',
+    configPath: '/etc/grafana/grafana.ini',
+    documentation: 'https://grafana.com/docs/'
+  },
+
+  // Alerting
+  {
+    id: 'vmAlert',
+    name: 'VMAlert',
+    type: 'alerting' as const,
+    description: 'VictoriaMetrics alerting component',
+    serviceName: 'vmalert',
+    port: 8880,
+    architecture: ['x86_64', 'arm64'],
+    dependencies: [],
+    features: ['PromQL Alerts', 'Recording Rules', 'Multiple Datasources', 'Webhook Notifications'],
+    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
+    configPath: '/etc/vmalert/vmalert.yml',
+    documentation: 'https://docs.victoriametrics.com/vmalert.html'
+  },
+  {
+    id: 'alertmanager',
+    name: 'Alertmanager',
+    type: 'alerting' as const,
+    description: 'Prometheus Alertmanager handles alerts sent by client applications',
+    serviceName: 'alertmanager',
+    port: 9093,
+    architecture: ['x86_64', 'arm64', 'armv7'],
+    dependencies: [],
+    features: ['Alert Routing', 'Grouping', 'Inhibition', 'Silencing', 'High Availability'],
+    githubRepo: 'prometheus/alertmanager',
+    configPath: '/etc/alertmanager/alertmanager.yml',
+    documentation: 'https://prometheus.io/docs/alerting/latest/alertmanager/'
+  }
+];
+
 export default function ComponentInstaller() {
   const [selectedHost, setSelectedHost] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -112,39 +297,71 @@ export default function ComponentInstaller() {
   const [installations, setInstallations] = useState<InstallationJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showInstallDialog, setShowInstallDialog] = useState(false);
-  const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
-  const [installationSettings, setInstallationSettings] = useState({
-    autoStart: true,
-    enableMetrics: true,
-    customConfig: false,
-    configContent: ''
-  });
+  const [showHostDialog, setShowHostDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState('components');
 
-  // Fetch data from backend APIs
+  // 初始化组件数据
   useEffect(() => {
-    fetchComponents();
+    initializeComponents();
     fetchHosts();
     fetchInstallations();
   }, []);
 
-  const fetchComponents = async () => {
+  const initializeComponents = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/v1/components');
+      // 为每个组件获取最新版本信息
+      const componentsWithVersions = await Promise.all(
+        COMPONENT_DEFINITIONS.map(async (comp) => {
+          try {
+            // 从GitHub API获取最新版本
+            const response = await fetch(`/api/v1/github/versions?repo=${comp.githubRepo}`);
+            let latestVersion = 'latest';
+            let downloadUrl = '';
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.versions && data.versions.length > 0) {
+                const latest = data.versions.find((v: any) => v.is_latest) || data.versions[0];
+                latestVersion = latest.version;
+                downloadUrl = latest.download_url || '';
+              }
+            }
+            
+            return {
+              ...comp,
+              version: latestVersion,
+              latestVersion: latestVersion,
+              downloadUrl: downloadUrl,
+              status: 'available' as const
+            };
+          } catch (err) {
+            console.error(`Error fetching version for ${comp.name}:`, err);
+            return {
+              ...comp,
+              version: 'latest',
+              latestVersion: 'latest',
+              downloadUrl: '',
+              status: 'available' as const
+            };
+          }
+        })
+      );
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch components');
-      }
-      
-      const data = await response.json();
-      setComponents(data || []);
+      setComponents(componentsWithVersions);
     } catch (err) {
-      console.error('Error fetching components:', err);
-      setError('Unable to fetch component data. Please check if backend server is running on port 8080.');
-      setComponents([]);
+      console.error('Error initializing components:', err);
+      setError('Failed to initialize components. Using default configuration.');
+      // 使用默认配置
+      setComponents(COMPONENT_DEFINITIONS.map(comp => ({
+        ...comp,
+        version: 'latest',
+        latestVersion: 'latest',
+        downloadUrl: '',
+        status: 'available' as const
+      })));
     } finally {
       setLoading(false);
     }
@@ -243,9 +460,8 @@ export default function ComponentInstaller() {
           component_id: component.id,
           host_id: selectedHost,
           version: component.version,
-          auto_start: installationSettings.autoStart,
-          enable_metrics: installationSettings.enableMetrics,
-          custom_config: installationSettings.customConfig ? installationSettings.configContent : null
+          auto_start: true,
+          enable_metrics: true
         })
       });
 
@@ -409,11 +625,15 @@ export default function ComponentInstaller() {
         </Alert>
       )}
 
-      <Tabs defaultValue="components" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-slate-800/50 border border-slate-700">
           <TabsTrigger value="components">
             <Package className="h-4 w-4 mr-2" />
             Component Library
+          </TabsTrigger>
+          <TabsTrigger value="hosts">
+            <Server className="h-4 w-4 mr-2" />
+            Host Management
           </TabsTrigger>
           <TabsTrigger value="installed">
             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -430,10 +650,21 @@ export default function ComponentInstaller() {
           {/* Host Selection & Filters */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Component Installation</CardTitle>
-              <CardDescription className="text-slate-400">
-                Select a target host and install monitoring components directly
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Component Installation</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Select a target host and install monitoring components directly
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => setActiveTab('hosts')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Server className="h-4 w-4 mr-2" />
+                  Manage Hosts
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -447,7 +678,7 @@ export default function ComponentInstaller() {
                     <option value="">Select a host to enable installation...</option>
                     {connectedHosts.map(host => (
                       <option key={host.id} value={host.id}>
-                        {host.name} ({host.ip}) - {host.os}
+                        {host.name} ({host.ip}) - {host.os} {host.architecture}
                       </option>
                     ))}
                   </select>
@@ -505,7 +736,15 @@ export default function ComponentInstaller() {
                 <Alert className="border-red-500 bg-red-500/10">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription className="text-red-400">
-                    No connected hosts available. Please go to Host Management to add and connect hosts before installing components.
+                    No connected hosts available. Please go to Host Management tab to add and connect hosts before installing components.
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="ml-2 border-red-500 text-red-400"
+                      onClick={() => setActiveTab('hosts')}
+                    >
+                      Go to Host Management
+                    </Button>
                   </AlertDescription>
                 </Alert>
               )}
@@ -516,30 +755,8 @@ export default function ComponentInstaller() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-3" />
-              <span className="text-slate-400">Loading components from backend...</span>
+              <span className="text-slate-400">Loading components and fetching latest versions...</span>
             </div>
-          ) : components.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-8 text-center">
-                <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate-300 mb-2">No Components Available</h3>
-                <p className="text-slate-400 mb-4">
-                  Unable to load components from backend. Please ensure:
-                </p>
-                <ul className="text-sm text-slate-500 text-left max-w-md mx-auto space-y-1">
-                  <li>• Backend server is running on port 8080</li>
-                  <li>• Database is properly configured</li>
-                  <li>• Network connection is available</li>
-                </ul>
-                <Button 
-                  onClick={fetchComponents} 
-                  className="mt-4 bg-blue-600 hover:bg-blue-700"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry Loading
-                </Button>
-              </CardContent>
-            </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredComponents.map((component) => (
@@ -554,6 +771,17 @@ export default function ComponentInstaller() {
                         <div>
                           <h3 className="font-semibold text-white text-lg">{component.name}</h3>
                           <p className="text-sm text-slate-400">v{component.version}</p>
+                          {component.githubRepo && (
+                            <a 
+                              href={`https://github.com/${component.githubRepo}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-400 hover:text-blue-300 flex items-center mt-1"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {component.githubRepo}
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -736,6 +964,11 @@ export default function ComponentInstaller() {
           )}
         </TabsContent>
 
+        {/* Host Management Tab */}
+        <TabsContent value="hosts" className="space-y-6">
+          <HostSelection />
+        </TabsContent>
+
         {/* Installed Components Tab */}
         <TabsContent value="installed" className="space-y-6">
           <Card className="bg-slate-800/50 border-slate-700">
@@ -789,9 +1022,16 @@ export default function ComponentInstaller() {
                   <div className="text-center py-8">
                     <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-slate-300 mb-2">No Installed Components</h3>
-                    <p className="text-slate-400">
+                    <p className="text-slate-400 mb-4">
                       Install components from the Component Library to get started.
                     </p>
+                    <Button 
+                      onClick={() => setActiveTab('components')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Browse Components
+                    </Button>
                   </div>
                 )}
               </div>
