@@ -38,7 +38,8 @@ func main() {
 	// Health check endpoint
 	r.GET("/health", healthCheck)
 
-	// GitHub version checking endpoint
+	// Network connectivity endpoints
+	r.GET("/api/v1/network/internet-check", checkInternetConnectivity)
 	r.GET("/api/v1/github/versions", checkGitHubVersions)
 
 	// API routes
@@ -59,6 +60,7 @@ func main() {
 		api.POST("/components/start/:id", startComponent)
 		api.POST("/components/stop/:id", stopComponent)
 		api.GET("/installations", getInstallations)
+		api.GET("/installations/:id/status", getInstallationStatus)
 
 		// MIB file management
 		api.GET("/mibs", getMIBFiles)
@@ -112,6 +114,16 @@ func main() {
 	}
 
 	log.Println("SNMP Monitor Pro API server starting on :8080")
+	log.Println("Features enabled:")
+	log.Println("  ✓ Real network connectivity detection")
+	log.Println("  ✓ SSH-based remote host management")
+	log.Println("  ✓ Component installation and deployment")
+	log.Println("  ✓ Configuration generation and deployment")
+	log.Println("  ✓ MIB file management and parsing")
+	log.Println("  ✓ Device monitoring and discovery")
+	log.Println("  ✓ Alert management and notifications")
+	log.Println("  ✓ System health monitoring")
+	
 	r.Run(":8080")
 }
 
@@ -122,5 +134,14 @@ func healthCheck(c *gin.Context) {
 		"message": "SNMP Monitor Pro API is running",
 		"version": "2.1.0",
 		"timestamp": "2025-01-15T10:00:00Z",
+		"features": []string{
+			"network_connectivity",
+			"ssh_deployment",
+			"component_management",
+			"mib_management",
+			"device_monitoring",
+			"alert_management",
+			"config_deployment",
+		},
 	})
 }

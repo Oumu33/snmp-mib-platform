@@ -13,50 +13,94 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { 
   Download, 
   Server, 
-  Database, 
-  BarChart3, 
-  Bell, 
-  Activity, 
-  Search, 
-  Filter, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Clock, 
+  Play, 
+  Square, 
+  Trash2, 
+  Settings, 
+  Eye, 
   RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  Play,
-  Pause,
-  Settings,
-  Eye,
-  Trash2,
-  Package,
-  Zap,
-  Monitor,
-  Shield,
-  Globe,
-  Target,
-  Cpu,
-  HardDrive,
   Network,
-  Layers,
+  Globe,
+  Wifi,
+  WifiOff,
+  Terminal,
+  Key,
+  Lock,
+  Unlock,
+  Target,
+  Activity,
+  Database,
+  Monitor,
+  BarChart3,
+  Zap,
+  Shield,
+  Package,
   GitBranch,
   ExternalLink,
+  Upload,
+  HardDrive,
+  Cpu,
+  MemoryStick,
+  Router,
+  Search,
+  Plus,
+  Minus,
   Info,
   AlertCircle,
-  Loader2,
-  Plus,
-  X,
-  Check,
-  Users,
-  Key,
-  Terminal,
-  Edit,
-  Wifi,
-  Signal,
-  Router,
+  FileText,
+  Code,
+  Layers,
   Cloud,
-  Link
+  CloudOff
 } from 'lucide-react';
-import { HostSelection } from './HostSelection';
+
+interface NetworkStatus {
+  backend: 'online' | 'offline';
+  internet: 'online' | 'offline';
+  lastCheck: string;
+  latency: {
+    backend: number;
+    internet: number;
+  };
+}
+
+interface Host {
+  id: string;
+  name: string;
+  ip: string;
+  type: 'cloud' | 'internal' | 'edge';
+  location: string;
+  sshPort: number;
+  username: string;
+  authMethod: 'password' | 'key';
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  lastSeen: string;
+  os: string;
+  architecture: string;
+  specs: {
+    cpu: string;
+    memory: string;
+    disk: string;
+  };
+  resources: {
+    cpu: number;
+    memory: number;
+    disk: number;
+    network: number;
+  };
+  installedComponents: string[];
+  networkAccess: {
+    internal: boolean;
+    external: boolean;
+    latency: number;
+  };
+  sshKeyFingerprint?: string;
+  region?: string;
+  provider?: string;
+}
 
 interface Component {
   id: string;
@@ -64,64 +108,32 @@ interface Component {
   type: 'collector' | 'storage' | 'visualization' | 'alerting';
   description: string;
   version: string;
-  latestVersion: string;
+  releaseDate: string;
   downloadUrl: string;
-  configPath: string;
-  serviceName: string;
-  port: number;
-  status: 'available' | 'installing' | 'installed' | 'failed' | 'updating';
-  hostId?: string;
-  hostName?: string;
+  size: string;
+  downloadCount: number;
   architecture: string[];
   dependencies: string[];
-  features: string[];
+  ports: number[];
+  configPath: string;
+  serviceName: string;
+  isCluster: boolean;
+  clusterComponents?: string[];
+  githubUrl: string;
+  documentation: string;
+  status: 'available' | 'installing' | 'installed' | 'failed';
   installProgress?: number;
   installLog?: string[];
-  lastInstalled?: string;
-  uptime?: string;
-  memoryUsage?: number;
-  cpuUsage?: number;
-  isCluster?: boolean;
-  clusterComponents?: string[];
-  githubRepo?: string;
-  documentation?: string;
-  configTemplate?: string;
-  releaseDate?: string;
-  downloadCount?: number;
-  size?: string;
 }
 
-interface Host {
-  id: string;
-  name: string;
-  ip: string;
-  status: 'connected' | 'disconnected' | 'connecting';
-  os: string;
-  architecture: string;
-  resources: {
-    cpu: number;
-    memory: number;
-    disk: number;
-  };
-  sshPort: number;
-  username: string;
-  authMethod: 'password' | 'key';
-  lastSeen: string;
-  installedComponents: string[];
-  networkAccess: {
-    internal: boolean;
-    external: boolean;
-    lastCheck: string;
-  };
-}
-
-interface InstallationJob {
+interface Installation {
   id: string;
   componentId: string;
   componentName: string;
   hostId: string;
   hostName: string;
-  status: 'pending' | 'installing' | 'completed' | 'failed';
+  version: string;
+  status: 'pending' | 'downloading' | 'installing' | 'configuring' | 'starting' | 'completed' | 'failed';
   progress: number;
   startTime: string;
   endTime?: string;
@@ -129,611 +141,330 @@ interface InstallationJob {
   error?: string;
 }
 
-interface NetworkStatus {
-  internal: boolean;
-  external: boolean;
-  githubApi: boolean;
-  lastCheck: string;
-  errors: string[];
-}
-
-// 完整的组件列表 - 从GitHub动态获取版本信息
-const COMPONENT_DEFINITIONS = [
-  // Data Collectors
-  {
-    id: 'node-exporter',
-    name: 'Node Exporter',
-    type: 'collector' as const,
-    description: 'Prometheus exporter for hardware and OS metrics exposed by *NIX kernels',
-    serviceName: 'node_exporter',
-    port: 9100,
-    architecture: ['x86_64', 'arm64', 'armv7'],
-    dependencies: [],
-    features: ['System Metrics', 'Hardware Monitoring', 'Process Stats', 'Filesystem Stats'],
-    githubRepo: 'prometheus/node_exporter',
-    configPath: '/etc/node_exporter/node_exporter.yml',
-    documentation: 'https://github.com/prometheus/node_exporter'
-  },
-  {
-    id: 'categraf',
-    name: 'Categraf',
-    type: 'collector' as const,
-    description: 'One-stop telemetry collector for metrics, logs and traces',
-    serviceName: 'categraf',
-    port: 9100,
-    architecture: ['x86_64', 'arm64', 'armv7'],
-    dependencies: [],
-    features: ['Multi-protocol Support', 'SNMP Collection', 'Log Collection', 'Trace Collection'],
-    githubRepo: 'flashcatcloud/categraf',
-    configPath: '/etc/categraf/conf.d/',
-    documentation: 'https://github.com/flashcatcloud/categraf'
-  },
-  {
-    id: 'snmp-exporter',
-    name: 'SNMP Exporter',
-    type: 'collector' as const,
-    description: 'SNMP Exporter for Prometheus to monitor network devices',
-    serviceName: 'snmp_exporter',
-    port: 9116,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: [],
-    features: ['SNMP v1/v2c/v3', 'MIB Support', 'Network Devices', 'Custom OIDs'],
-    githubRepo: 'prometheus/snmp_exporter',
-    configPath: '/etc/snmp_exporter/snmp.yml',
-    documentation: 'https://github.com/prometheus/snmp_exporter'
-  },
-  {
-    id: 'vmAgent',
-    name: 'VMAgent',
-    type: 'collector' as const,
-    description: 'VictoriaMetrics agent for collecting and forwarding metrics',
-    serviceName: 'vmagent',
-    port: 8429,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: [],
-    features: ['Remote Write', 'Service Discovery', 'Relabeling', 'Deduplication'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/vmagent/vmagent.yml',
-    documentation: 'https://docs.victoriametrics.com/vmagent.html'
-  },
-
-  // Storage Systems
-  {
-    id: 'victoriametrics-single',
-    name: 'VictoriaMetrics Single',
-    type: 'storage' as const,
-    description: 'Fast, cost-effective monitoring solution and time series database',
-    serviceName: 'victoria-metrics',
-    port: 8428,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: [],
-    features: ['High Performance', 'Low Resource Usage', 'PromQL Support', 'Long-term Storage'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/victoria-metrics/victoria-metrics.yml',
-    documentation: 'https://docs.victoriametrics.com/'
-  },
-  {
-    id: 'vmStorage',
-    name: 'VMStorage',
-    type: 'storage' as const,
-    description: 'VictoriaMetrics cluster storage component',
-    serviceName: 'vmstorage',
-    port: 8482,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: [],
-    features: ['Cluster Storage', 'Data Replication', 'Horizontal Scaling', 'Data Retention'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/vmstorage/vmstorage.yml',
-    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
-    isCluster: true,
-    clusterComponents: ['VMInsert', 'VMSelect']
-  },
-  {
-    id: 'vmInsert',
-    name: 'VMInsert',
-    type: 'storage' as const,
-    description: 'VictoriaMetrics cluster insert component',
-    serviceName: 'vminsert',
-    port: 8480,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: ['vmStorage'],
-    features: ['Data Ingestion', 'Load Balancing', 'Deduplication', 'Relabeling'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/vminsert/vminsert.yml',
-    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
-    isCluster: true,
-    clusterComponents: ['VMStorage', 'VMSelect']
-  },
-  {
-    id: 'vmSelect',
-    name: 'VMSelect',
-    type: 'storage' as const,
-    description: 'VictoriaMetrics cluster select component',
-    serviceName: 'vmselect',
-    port: 8481,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: ['vmStorage'],
-    features: ['Query Processing', 'PromQL Support', 'Data Aggregation', 'Caching'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/vmselect/vmselect.yml',
-    documentation: 'https://docs.victoriametrics.com/Cluster-VictoriaMetrics.html',
-    isCluster: true,
-    clusterComponents: ['VMStorage', 'VMInsert']
-  },
-
-  // Visualization
-  {
-    id: 'grafana',
-    name: 'Grafana',
-    type: 'visualization' as const,
-    description: 'Open source analytics and interactive visualization web application',
-    serviceName: 'grafana-server',
-    port: 3000,
-    architecture: ['x86_64', 'arm64', 'armv7'],
-    dependencies: [],
-    features: ['Rich Dashboards', 'Alerting', 'Data Sources', 'Plugins', 'User Management'],
-    githubRepo: 'grafana/grafana',
-    configPath: '/etc/grafana/grafana.ini',
-    documentation: 'https://grafana.com/docs/'
-  },
-
-  // Alerting
-  {
-    id: 'vmAlert',
-    name: 'VMAlert',
-    type: 'alerting' as const,
-    description: 'VictoriaMetrics alerting component',
-    serviceName: 'vmalert',
-    port: 8880,
-    architecture: ['x86_64', 'arm64'],
-    dependencies: [],
-    features: ['PromQL Alerts', 'Recording Rules', 'Multiple Datasources', 'Webhook Notifications'],
-    githubRepo: 'VictoriaMetrics/VictoriaMetrics',
-    configPath: '/etc/vmalert/vmalert.yml',
-    documentation: 'https://docs.victoriametrics.com/vmalert.html'
-  },
-  {
-    id: 'alertmanager',
-    name: 'Alertmanager',
-    type: 'alerting' as const,
-    description: 'Prometheus Alertmanager handles alerts sent by client applications',
-    serviceName: 'alertmanager',
-    port: 9093,
-    architecture: ['x86_64', 'arm64', 'armv7'],
-    dependencies: [],
-    features: ['Alert Routing', 'Grouping', 'Inhibition', 'Silencing', 'High Availability'],
-    githubRepo: 'prometheus/alertmanager',
-    configPath: '/etc/alertmanager/alertmanager.yml',
-    documentation: 'https://prometheus.io/docs/alerting/latest/alertmanager/'
-  }
-];
-
 export default function ComponentInstaller() {
   const [selectedHost, setSelectedHost] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [components, setComponents] = useState<Component[]>([]);
-  const [hosts, setHosts] = useState<Host[]>([]);
-  const [installations, setInstallations] = useState<InstallationJob[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showHostDialog, setShowHostDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('components');
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
-    internal: false,
-    external: false,
-    githubApi: false,
-    lastCheck: '',
-    errors: []
+    backend: 'offline',
+    internet: 'offline',
+    lastCheck: 'Never',
+    latency: { backend: 0, internet: 0 }
+  });
+  const [hosts, setHosts] = useState<Host[]>([]);
+  const [components, setComponents] = useState<Component[]>([]);
+  const [installations, setInstallations] = useState<Installation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddHost, setShowAddHost] = useState(false);
+  const [newHost, setNewHost] = useState({
+    name: '',
+    ip: '',
+    type: 'internal' as 'cloud' | 'internal' | 'edge',
+    location: '',
+    sshPort: 22,
+    username: '',
+    authMethod: 'password' as 'password' | 'key',
+    password: '',
+    sshKeyId: '',
+    region: '',
+    provider: ''
   });
 
-  // 网络连接检测
+  // 网络状态检测
   useEffect(() => {
-    checkNetworkConnectivity();
-    const interval = setInterval(checkNetworkConnectivity, 30000); // 每30秒检查一次
+    checkNetworkStatus();
+    const interval = setInterval(checkNetworkStatus, 30000); // 每30秒检查一次
     return () => clearInterval(interval);
   }, []);
 
-  // 初始化组件数据
+  // 初始化数据
   useEffect(() => {
-    initializeComponents();
-    fetchHosts();
-    fetchInstallations();
+    initializeData();
   }, []);
 
-  const checkNetworkConnectivity = async () => {
-    const status: NetworkStatus = {
-      internal: false,
-      external: false,
-      githubApi: false,
-      lastCheck: new Date().toISOString(),
-      errors: []
-    };
-
+  const checkNetworkStatus = async () => {
+    const startTime = Date.now();
+    
     try {
-      // 检查内网连接 - 测试后端API
-      try {
-        const response = await fetch('/api/v1/system/health', { 
-          method: 'GET',
-          timeout: 5000 
-        } as any);
-        status.internal = response.ok;
-        if (!response.ok) {
-          status.errors.push('Backend API connection failed');
+      // 检查后端连接
+      const backendStart = Date.now();
+      const backendResponse = await fetch('/api/v1/system/health', {
+        method: 'GET',
+        timeout: 5000
+      });
+      const backendLatency = Date.now() - backendStart;
+      
+      // 检查互联网连接（通过后端代理）
+      const internetStart = Date.now();
+      const internetResponse = await fetch('/api/v1/network/internet-check', {
+        method: 'GET',
+        timeout: 10000
+      });
+      const internetLatency = Date.now() - internetStart;
+      
+      setNetworkStatus({
+        backend: backendResponse.ok ? 'online' : 'offline',
+        internet: internetResponse.ok ? 'online' : 'offline',
+        lastCheck: new Date().toLocaleTimeString(),
+        latency: {
+          backend: backendLatency,
+          internet: internetLatency
         }
-      } catch (err) {
-        status.internal = false;
-        status.errors.push('Internal network connection failed');
-      }
-
-      // 检查外网连接 - 测试GitHub API
-      try {
-        const response = await fetch('https://api.github.com/rate_limit', {
-          method: 'GET',
-          timeout: 10000
-        } as any);
-        status.external = response.ok;
-        status.githubApi = response.ok;
-        if (!response.ok) {
-          status.errors.push('GitHub API access failed - version updates may be limited');
-        }
-      } catch (err) {
-        status.external = false;
-        status.githubApi = false;
-        status.errors.push('External network connection failed - using cached version data');
-      }
-
-      setNetworkStatus(status);
+      });
     } catch (err) {
-      console.error('Network connectivity check failed:', err);
-      status.errors.push('Network connectivity check failed');
-      setNetworkStatus(status);
+      setNetworkStatus({
+        backend: 'offline',
+        internet: 'offline',
+        lastCheck: new Date().toLocaleTimeString(),
+        latency: { backend: 0, internet: 0 }
+      });
     }
   };
 
-  const initializeComponents = async () => {
+  const initializeData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // 为每个组件获取最新版本信息
-      const componentsWithVersions = await Promise.all(
-        COMPONENT_DEFINITIONS.map(async (comp) => {
-          try {
-            // 从GitHub API获取最新版本
-            const response = await fetch(`/api/v1/github/versions?repo=${comp.githubRepo}`, {
-              timeout: 15000
-            } as any);
-            
-            let latestVersion = 'latest';
-            let downloadUrl = '';
-            let releaseDate = '';
-            let downloadCount = 0;
-            let size = '';
-            
-            if (response.ok) {
-              const data = await response.json();
-              if (data.versions && data.versions.length > 0) {
-                const latest = data.versions.find((v: any) => v.is_latest) || data.versions[0];
-                latestVersion = latest.version;
-                downloadUrl = latest.download_url || '';
-                releaseDate = latest.release_date || '';
-                downloadCount = latest.download_count || 0;
-                size = latest.size ? `${(latest.size / 1024 / 1024).toFixed(1)} MB` : '';
-              }
-            }
-            
-            return {
-              ...comp,
-              version: latestVersion,
-              latestVersion: latestVersion,
-              downloadUrl: downloadUrl,
-              releaseDate: releaseDate,
-              downloadCount: downloadCount,
-              size: size,
-              status: 'available' as const
-            };
-          } catch (err) {
-            console.error(`Error fetching version for ${comp.name}:`, err);
-            return {
-              ...comp,
-              version: 'latest',
-              latestVersion: 'latest',
-              downloadUrl: '',
-              releaseDate: '',
-              downloadCount: 0,
-              size: '',
-              status: 'available' as const
-            };
-          }
-        })
-      );
-      
-      setComponents(componentsWithVersions);
+      // 并行获取数据
+      const [hostsResponse, componentsResponse, installationsResponse] = await Promise.all([
+        fetch('/api/v1/hosts'),
+        fetch('/api/v1/components'),
+        fetch('/api/v1/installations')
+      ]);
+
+      if (hostsResponse.ok) {
+        const hostsData = await hostsResponse.json();
+        setHosts(hostsData || []);
+      }
+
+      if (componentsResponse.ok) {
+        const componentsData = await componentsResponse.json();
+        setComponents(componentsData || []);
+      }
+
+      if (installationsResponse.ok) {
+        const installationsData = await installationsResponse.json();
+        setInstallations(installationsData || []);
+      }
+
     } catch (err) {
-      console.error('Error initializing components:', err);
-      setError('Failed to initialize components. Using default configuration.');
-      // 使用默认配置
-      setComponents(COMPONENT_DEFINITIONS.map(comp => ({
-        ...comp,
-        version: 'latest',
-        latestVersion: 'latest',
-        downloadUrl: '',
-        releaseDate: '',
-        downloadCount: 0,
-        size: '',
-        status: 'available' as const
-      })));
+      console.error('Error initializing data:', err);
+      setError('Failed to load data. Please check network connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchHosts = async () => {
+  const addHost = async () => {
     try {
-      const response = await fetch('/api/v1/hosts');
+      const response = await fetch('/api/v1/hosts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newHost.name,
+          ip: newHost.ip,
+          type: newHost.type,
+          location: newHost.location,
+          ssh_port: newHost.sshPort,
+          username: newHost.username,
+          auth_method: newHost.authMethod,
+          password: newHost.authMethod === 'password' ? newHost.password : '',
+          ssh_key_id: newHost.authMethod === 'key' ? newHost.sshKeyId : '',
+          region: newHost.region,
+          provider: newHost.provider
+        })
+      });
+
       if (response.ok) {
-        const data = await response.json();
-        // 为每个主机添加网络访问检测
-        const hostsWithNetwork = data.map((host: any) => ({
-          ...host,
-          networkAccess: {
-            internal: true, // 假设内网可达
-            external: networkStatus.external, // 基于平台外网状态
-            lastCheck: new Date().toISOString()
-          }
-        }));
-        setHosts(hostsWithNetwork || []);
+        setShowAddHost(false);
+        setNewHost({
+          name: '',
+          ip: '',
+          type: 'internal',
+          location: '',
+          sshPort: 22,
+          username: '',
+          authMethod: 'password',
+          password: '',
+          sshKeyId: '',
+          region: '',
+          provider: ''
+        });
+        initializeData(); // 刷新数据
       } else {
-        throw new Error('Failed to fetch hosts');
+        const error = await response.json();
+        setError(error.message || 'Failed to add host');
       }
     } catch (err) {
-      console.error('Error fetching hosts:', err);
-      setError('Unable to fetch host data. Please ensure backend is running and hosts are configured.');
-      setHosts([]);
+      console.error('Error adding host:', err);
+      setError('Error occurred while adding host');
     }
   };
 
-  const fetchInstallations = async () => {
+  const testHostConnection = async (hostId: string) => {
     try {
-      const response = await fetch('/api/v1/installations');
-      if (response.ok) {
-        const data = await response.json();
-        setInstallations(data || []);
-      }
-    } catch (err) {
-      console.error('Error fetching installations:', err);
-    }
-  };
+      const response = await fetch(`/api/v1/hosts/${hostId}/test`, {
+        method: 'POST'
+      });
 
-  const getTypeIcon = (type: Component['type']) => {
-    switch (type) {
-      case 'collector': return <Database className="h-5 w-5 text-blue-400" />;
-      case 'storage': return <Server className="h-5 w-5 text-green-400" />;
-      case 'visualization': return <BarChart3 className="h-5 w-5 text-purple-400" />;
-      case 'alerting': return <Bell className="h-5 w-5 text-orange-400" />;
-      default: return <Package className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
-  const getStatusIcon = (status: Component['status']) => {
-    switch (status) {
-      case 'installed': return <CheckCircle2 className="h-4 w-4 text-green-400" />;
-      case 'installing': return <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />;
-      case 'failed': return <AlertTriangle className="h-4 w-4 text-red-400" />;
-      case 'updating': return <RefreshCw className="h-4 w-4 text-yellow-400 animate-spin" />;
-      default: return <Download className="h-4 w-4 text-slate-400" />;
-    }
-  };
-
-  const getStatusColor = (status: Component['status']) => {
-    switch (status) {
-      case 'installed': return 'border-green-500 bg-green-500/10';
-      case 'installing': return 'border-blue-500 bg-blue-500/10';
-      case 'failed': return 'border-red-500 bg-red-500/10';
-      case 'updating': return 'border-yellow-500 bg-yellow-500/10';
-      default: return 'border-slate-600 hover:border-blue-500';
-    }
-  };
-
-  const getNetworkStatusIcon = () => {
-    if (networkStatus.internal && networkStatus.external) {
-      return <Globe className="h-4 w-4 text-green-400" />;
-    } else if (networkStatus.internal) {
-      return <Wifi className="h-4 w-4 text-yellow-400" />;
-    } else {
-      return <AlertTriangle className="h-4 w-4 text-red-400" />;
-    }
-  };
-
-  const filteredComponents = components.filter(component => {
-    const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         component.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'all' || component.type === selectedType;
-    return matchesSearch && matchesType;
-  });
-
-  const connectedHosts = hosts.filter(h => h.status === 'connected');
-  const installedComponents = components.filter(c => c.status === 'installed').length;
-  const runningInstallations = installations.filter(i => i.status === 'installing').length;
-
-  // 安装组件函数
-  const installComponent = async (component: Component) => {
-    if (!selectedHost) {
-      setError('Please select a target host first before installing components.');
-      return;
-    }
-
-    // 检查网络连接
-    if (!networkStatus.internal) {
-      setError('Internal network connection required for component installation.');
-      return;
-    }
-
-    try {
-      // 更新组件状态为安装中
-      setComponents(prev => prev.map(c => 
-        c.id === component.id 
-          ? { ...c, status: 'installing', installProgress: 0, hostId: selectedHost, hostName: hosts.find(h => h.id === selectedHost)?.name }
-          : c
+      const result = await response.json();
+      
+      // 更新主机状态
+      setHosts(prev => prev.map(h => 
+        h.id === hostId 
+          ? { 
+              ...h, 
+              status: response.ok ? 'connected' : 'error',
+              lastSeen: response.ok ? new Date().toISOString() : h.lastSeen
+            }
+          : h
       ));
 
+      if (!response.ok) {
+        setError(`Connection test failed for host: ${result.message}`);
+      }
+    } catch (err) {
+      console.error('Error testing host connection:', err);
+      setError('Failed to test host connection');
+    }
+  };
+
+  const installComponent = async (componentId: string) => {
+    if (!selectedHost) {
+      setError('Please select a target host first');
+      return;
+    }
+
+    try {
       const response = await fetch('/api/v1/components/install', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          component_id: component.id,
+          component_id: componentId,
           host_id: selectedHost,
-          version: component.version,
-          auto_start: true,
-          enable_metrics: true,
-          download_url: component.downloadUrl,
-          network_mode: networkStatus.external ? 'external' : 'internal'
+          auto_start: true
         })
       });
 
       if (response.ok) {
-        // 模拟安装进度
-        simulateInstallation(component.id);
-        setError(null);
+        const installation = await response.json();
+        setInstallations(prev => [...prev, installation]);
+        
+        // 开始监控安装进度
+        monitorInstallation(installation.id);
       } else {
-        const errorData = await response.json();
-        setComponents(prev => prev.map(c => 
-          c.id === component.id 
-            ? { ...c, status: 'failed', installProgress: 0 }
-            : c
-        ));
-        setError(errorData.message || 'Installation failed');
+        const error = await response.json();
+        setError(error.message || 'Failed to start installation');
       }
     } catch (err) {
       console.error('Error installing component:', err);
-      setComponents(prev => prev.map(c => 
-        c.id === component.id 
-          ? { ...c, status: 'failed', installProgress: 0 }
-          : c
-      ));
-      setError('Error occurred during installation. Please check backend connection.');
+      setError('Error occurred during installation');
     }
   };
 
-  // 模拟安装进度
-  const simulateInstallation = (componentId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress >= 100) {
-        progress = 100;
+  const monitorInstallation = (installationId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/v1/installations/${installationId}/status`);
+        if (response.ok) {
+          const status = await response.json();
+          
+          setInstallations(prev => prev.map(inst => 
+            inst.id === installationId ? { ...inst, ...status } : inst
+          ));
+
+          // 如果安装完成或失败，停止监控
+          if (status.status === 'completed' || status.status === 'failed') {
+            clearInterval(interval);
+            initializeData(); // 刷新数据
+          }
+        }
+      } catch (err) {
+        console.error('Error monitoring installation:', err);
         clearInterval(interval);
-        setComponents(prev => prev.map(c => 
-          c.id === componentId 
-            ? { 
-                ...c, 
-                status: 'installed', 
-                installProgress: 100,
-                lastInstalled: new Date().toISOString(),
-                uptime: '0 minutes',
-                memoryUsage: Math.floor(Math.random() * 50) + 10,
-                cpuUsage: Math.floor(Math.random() * 30) + 5
-              }
-            : c
-        ));
-      } else {
-        setComponents(prev => prev.map(c => 
-          c.id === componentId 
-            ? { ...c, installProgress: Math.floor(progress) }
-            : c
-        ));
       }
-    }, 500);
+    }, 2000); // 每2秒检查一次
   };
 
-  // 卸载组件
-  const uninstallComponent = async (componentId: string) => {
-    try {
-      const response = await fetch(`/api/v1/components/${componentId}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        setComponents(prev => prev.map(c => 
-          c.id === componentId 
-            ? { ...c, status: 'available', hostId: undefined, hostName: undefined, installProgress: 0 }
-            : c
-        ));
-      }
-    } catch (err) {
-      console.error('Error uninstalling component:', err);
-      setError('Error occurred during uninstallation');
+  const getHostTypeIcon = (type: Host['type']) => {
+    switch (type) {
+      case 'cloud': return <Cloud className="h-4 w-4 text-blue-400" />;
+      case 'internal': return <Server className="h-4 w-4 text-green-400" />;
+      case 'edge': return <Router className="h-4 w-4 text-purple-400" />;
+      default: return <Server className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  // 启动/停止组件
-  const toggleComponent = async (componentId: string, action: 'start' | 'stop') => {
-    try {
-      const response = await fetch(`/api/v1/components/${action}/${componentId}`, {
-        method: 'POST'
-      });
-
-      if (response.ok) {
-        console.log(`Component ${componentId} ${action}ed successfully`);
-      }
-    } catch (err) {
-      console.error(`Error ${action}ing component:`, err);
+  const getStatusIcon = (status: Host['status']) => {
+    switch (status) {
+      case 'connected': return <CheckCircle2 className="h-4 w-4 text-green-400" />;
+      case 'connecting': return <Clock className="h-4 w-4 text-blue-400 animate-spin" />;
+      case 'error': return <AlertTriangle className="h-4 w-4 text-red-400" />;
+      default: return <AlertCircle className="h-4 w-4 text-gray-400" />;
     }
   };
+
+  const getNetworkStatusColor = () => {
+    if (networkStatus.backend === 'online' && networkStatus.internet === 'online') {
+      return 'text-green-400';
+    } else if (networkStatus.backend === 'online') {
+      return 'text-yellow-400';
+    } else {
+      return 'text-red-400';
+    }
+  };
+
+  const getNetworkStatusText = () => {
+    if (networkStatus.backend === 'online' && networkStatus.internet === 'online') {
+      return 'Full Connectivity';
+    } else if (networkStatus.backend === 'online') {
+      return 'Limited Connectivity';
+    } else {
+      return 'No Connectivity';
+    }
+  };
+
+  const connectedHosts = hosts.filter(h => h.status === 'connected').length;
+  const cloudHosts = hosts.filter(h => h.type === 'cloud').length;
+  const internalHosts = hosts.filter(h => h.type === 'internal').length;
+  const activeInstallations = installations.filter(i => 
+    ['pending', 'downloading', 'installing', 'configuring', 'starting'].includes(i.status)
+  ).length;
 
   return (
     <div className="space-y-6">
-      {/* Network Status Alert */}
-      {(!networkStatus.internal || !networkStatus.external) && (
-        <Alert className={`${!networkStatus.internal ? 'border-red-500 bg-red-500/10' : 'border-yellow-500 bg-yellow-500/10'}`}>
-          {getNetworkStatusIcon()}
-          <AlertDescription className={`${!networkStatus.internal ? 'text-red-400' : 'text-yellow-400'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <strong>Network Status:</strong> 
-                {!networkStatus.internal && ' Internal network connection failed - backend services unavailable'}
-                {networkStatus.internal && !networkStatus.external && ' External network limited - using cached component versions'}
-                {networkStatus.errors.length > 0 && (
-                  <div className="text-xs mt-1">
-                    {networkStatus.errors.join(', ')}
-                  </div>
-                )}
-              </div>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="border-current text-current"
-                onClick={checkNetworkConnectivity}
-              >
-                <RefreshCw className="h-3 w-3 mr-1" />
-                Retry
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Statistics */}
+      {/* 网络状态和统计 */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Network Status</p>
-                <p className="text-lg font-bold text-white flex items-center">
-                  {getNetworkStatusIcon()}
-                  <span className="ml-2">
-                    {networkStatus.internal && networkStatus.external ? 'Online' :
-                     networkStatus.internal ? 'Limited' : 'Offline'}
-                  </span>
+                <p className={`text-lg font-bold ${getNetworkStatusColor()}`}>
+                  {getNetworkStatusText()}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Backend: {networkStatus.latency.backend}ms
                 </p>
               </div>
-              <div className="text-xs text-slate-500">
-                <div>Internal: {networkStatus.internal ? '✓' : '✗'}</div>
-                <div>External: {networkStatus.external ? '✓' : '✗'}</div>
+              <div className="flex flex-col items-center">
+                {networkStatus.backend === 'online' ? (
+                  networkStatus.internet === 'online' ? (
+                    <Wifi className="h-6 w-6 text-green-400" />
+                  ) : (
+                    <WifiOff className="h-6 w-6 text-yellow-400" />
+                  )
+                ) : (
+                  <CloudOff className="h-6 w-6 text-red-400" />
+                )}
+                <span className="text-xs text-slate-500 mt-1">
+                  {networkStatus.lastCheck}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -744,7 +475,34 @@ export default function ComponentInstaller() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Connected Hosts</p>
-                <p className="text-2xl font-bold text-green-400">{connectedHosts.length}</p>
+                <p className="text-2xl font-bold text-green-400">{connectedHosts}</p>
+                <p className="text-xs text-slate-500">of {hosts.length} total</p>
+              </div>
+              <CheckCircle2 className="h-8 w-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400">Cloud Hosts</p>
+                <p className="text-2xl font-bold text-blue-400">{cloudHosts}</p>
+                <p className="text-xs text-slate-500">External servers</p>
+              </div>
+              <Cloud className="h-8 w-8 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400">Internal Hosts</p>
+                <p className="text-2xl font-bold text-green-400">{internalHosts}</p>
+                <p className="text-xs text-slate-500">Local network</p>
               </div>
               <Server className="h-8 w-8 text-green-400" />
             </div>
@@ -755,34 +513,11 @@ export default function ComponentInstaller() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">Available Components</p>
-                <p className="text-2xl font-bold text-blue-400">{components.length}</p>
+                <p className="text-sm text-slate-400">Active Installs</p>
+                <p className="text-2xl font-bold text-orange-400">{activeInstallations}</p>
+                <p className="text-xs text-slate-500">In progress</p>
               </div>
-              <Package className="h-8 w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400">Installed</p>
-                <p className="text-2xl font-bold text-purple-400">{installedComponents}</p>
-              </div>
-              <CheckCircle2 className="h-8 w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400">Installing</p>
-                <p className="text-2xl font-bold text-orange-400">{runningInstallations}</p>
-              </div>
-              <Loader2 className="h-8 w-8 text-orange-400" />
+              <Download className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
@@ -799,7 +534,7 @@ export default function ComponentInstaller() {
               className="ml-2 border-red-500 text-red-400"
               onClick={() => setError(null)}
             >
-              <X className="h-3 w-3" />
+              Dismiss
             </Button>
           </AlertDescription>
         </Alert>
@@ -815,483 +550,387 @@ export default function ComponentInstaller() {
             <Server className="h-4 w-4 mr-2" />
             Host Management
           </TabsTrigger>
-          <TabsTrigger value="installed">
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Installed Components
-          </TabsTrigger>
           <TabsTrigger value="installations">
-            <Activity className="h-4 w-4 mr-2" />
-            Installation Jobs
+            <Download className="h-4 w-4 mr-2" />
+            Installation Monitor
+          </TabsTrigger>
+          <TabsTrigger value="network">
+            <Network className="h-4 w-4 mr-2" />
+            Network Diagnostics
           </TabsTrigger>
         </TabsList>
 
-        {/* Component Library Tab */}
+        {/* 组件库标签页 */}
         <TabsContent value="components" className="space-y-6">
-          {/* Host Selection & Filters */}
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-white">Component Installation</CardTitle>
+                  <CardTitle className="text-white">Monitoring Components</CardTitle>
                   <CardDescription className="text-slate-400">
-                    Select a target host and install monitoring components with real-time version updates
+                    Deploy monitoring stack components to remote hosts
                   </CardDescription>
                 </div>
-                <Button 
-                  onClick={() => setActiveTab('hosts')}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Server className="h-4 w-4 mr-2" />
-                  Manage Hosts
-                </Button>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Label className="text-slate-300">Target Host:</Label>
+                    <select
+                      value={selectedHost}
+                      onChange={(e) => setSelectedHost(e.target.value)}
+                      className="bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2 min-w-[200px]"
+                    >
+                      <option value="">Select Host...</option>
+                      {hosts.filter(h => h.status === 'connected').map(host => (
+                        <option key={host.id} value={host.id}>
+                          {host.name} ({host.ip}) - {host.type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button onClick={initializeData} variant="outline" className="border-slate-600 text-slate-300">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-slate-300">Target Host *</Label>
-                  <select
-                    value={selectedHost}
-                    onChange={(e) => setSelectedHost(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
-                  >
-                    <option value="">Select a host to enable installation...</option>
-                    {connectedHosts.map(host => (
-                      <option key={host.id} value={host.id}>
-                        {host.name} ({host.ip}) - {host.os} {host.architecture}
-                        {host.networkAccess && ` • ${host.networkAccess.internal ? 'Internal' : ''}${host.networkAccess.external ? '+External' : ''}`}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedHost && (
-                    <p className="text-xs text-green-400 mt-1">
-                      ✓ Selected: {hosts.find(h => h.id === selectedHost)?.name}
-                    </p>
-                  )}
-                  {connectedHosts.length === 0 && (
-                    <p className="text-xs text-red-400 mt-1">
-                      No connected hosts available. Please add and connect hosts first.
-                    </p>
-                  )}
-                </div>
-                
-                <div>
-                  <Label className="text-slate-300">Component Type</Label>
-                  <select
-                    value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
-                  >
-                    <option value="all">All Types ({components.length})</option>
-                    <option value="collector">Data Collectors ({components.filter(c => c.type === 'collector').length})</option>
-                    <option value="storage">Storage Systems ({components.filter(c => c.type === 'storage').length})</option>
-                    <option value="visualization">Visualization ({components.filter(c => c.type === 'visualization').length})</option>
-                    <option value="alerting">Alerting ({components.filter(c => c.type === 'alerting').length})</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <Label className="text-slate-300">Search Components</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      placeholder="Search by name or description..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-slate-700 border-slate-600 text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {!selectedHost && connectedHosts.length > 0 && (
-                <Alert className="border-yellow-500 bg-yellow-500/10">
+            <CardContent>
+              {!selectedHost && (
+                <Alert className="border-yellow-500 bg-yellow-500/10 mb-6">
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-yellow-400">
-                    Please select a target host above to enable component installation. Once selected, you can click "Install" on any component below.
+                    Please select a target host to enable component installation.
                   </AlertDescription>
                 </Alert>
               )}
-
-              {connectedHosts.length === 0 && (
-                <Alert className="border-red-500 bg-red-500/10">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-red-400">
-                    No connected hosts available. Please go to Host Management tab to add and connect hosts before installing components.
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="ml-2 border-red-500 text-red-400"
-                      onClick={() => setActiveTab('hosts')}
-                    >
-                      Go to Host Management
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Component Grid */}
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-3" />
-              <span className="text-slate-400">Loading components and fetching latest versions from GitHub...</span>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredComponents.map((component) => (
-                <Card 
-                  key={component.id} 
-                  className={`border transition-all hover:shadow-lg ${getStatusColor(component.status)}`}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        {getTypeIcon(component.type)}
-                        <div>
-                          <h3 className="font-semibold text-white text-lg">{component.name}</h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge className="bg-blue-600 text-white text-xs">
-                              v{component.version}
-                            </Badge>
-                            {component.releaseDate && (
-                              <span className="text-xs text-slate-500">
-                                {new Date(component.releaseDate).toLocaleDateString()}
-                              </span>
-                            )}
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {components.map((component) => (
+                  <Card key={component.id} className="border border-slate-600 hover:border-blue-500 transition-all">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-lg ${
+                            component.type === 'collector' ? 'bg-blue-600/20' :
+                            component.type === 'storage' ? 'bg-green-600/20' :
+                            component.type === 'visualization' ? 'bg-purple-600/20' : 'bg-orange-600/20'
+                          }`}>
+                            {component.type === 'collector' ? <Activity className="h-5 w-5" /> :
+                             component.type === 'storage' ? <Database className="h-5 w-5" /> :
+                             component.type === 'visualization' ? <BarChart3 className="h-5 w-5" /> :
+                             <Bell className="h-5 w-5" />}
                           </div>
-                          {component.githubRepo && (
-                            <a 
-                              href={`https://github.com/${component.githubRepo}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-400 hover:text-blue-300 flex items-center mt-1"
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              {component.githubRepo}
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(component.status)}
-                        <Badge className={`text-xs ${
-                          component.type === 'collector' ? 'bg-blue-600' :
-                          component.type === 'storage' ? 'bg-green-600' :
-                          component.type === 'visualization' ? 'bg-purple-600' : 'bg-orange-600'
-                        } text-white`}>
-                          {component.type}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-slate-300 mb-4 line-clamp-2">{component.description}</p>
-                    
-                    {/* Installation Progress */}
-                    {component.status === 'installing' && component.installProgress !== undefined && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="text-slate-400">Installing...</span>
-                          <span className="text-white">{component.installProgress}%</span>
-                        </div>
-                        <Progress value={component.installProgress} className="h-2" />
-                        <p className="text-xs text-slate-500 mt-1">
-                          Installing on {component.hostName}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {/* Component Details */}
-                    <div className="space-y-3 mb-4">
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
-                        <div><strong>Port:</strong> {component.port}</div>
-                        <div><strong>Service:</strong> {component.serviceName}</div>
-                        {component.size && (
-                          <div><strong>Size:</strong> {component.size}</div>
-                        )}
-                        {component.downloadCount > 0 && (
-                          <div><strong>Downloads:</strong> {component.downloadCount.toLocaleString()}</div>
-                        )}
-                        {component.isCluster && (
-                          <div className="col-span-2">
-                            <strong>Cluster:</strong> {component.clusterComponents?.join(', ')}
+                          <div>
+                            <h3 className="font-semibold text-white">{component.name}</h3>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Badge className="bg-blue-600 text-white text-xs">
+                                v{component.version}
+                              </Badge>
+                              {component.isCluster && (
+                                <Badge className="bg-purple-600 text-white text-xs">
+                                  Cluster
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(component.githubUrl, '_blank')}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(component.documentation, '_blank')}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       
-                      <div className="flex flex-wrap gap-1">
-                        {component.features.slice(0, 3).map((feature, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs border-slate-700 text-slate-400">
-                            {feature}
-                          </Badge>
-                        ))}
-                        {component.features.length > 3 && (
-                          <Badge variant="outline" className="text-xs border-slate-700 text-slate-400">
-                            +{component.features.length - 3}
-                          </Badge>
-                        )}
+                      <p className="text-sm text-slate-300 mb-4">{component.description}</p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+                          <div><strong>Release:</strong> {component.releaseDate}</div>
+                          <div><strong>Size:</strong> {component.size}</div>
+                          <div><strong>Downloads:</strong> {component.downloadCount.toLocaleString()}</div>
+                          <div><strong>Arch:</strong> {component.architecture.join(', ')}</div>
+                        </div>
                       </div>
                       
                       {component.dependencies.length > 0 && (
-                        <div>
+                        <div className="mb-4">
                           <p className="text-xs text-slate-500 mb-1">Dependencies:</p>
                           <div className="flex flex-wrap gap-1">
                             {component.dependencies.map((dep, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs border-yellow-600 text-yellow-400">
+                              <Badge key={idx} variant="outline" className="text-xs border-slate-700 text-slate-400">
                                 {dep}
                               </Badge>
                             ))}
                           </div>
                         </div>
                       )}
-                    </div>
-                    
-                    {/* Installed Component Info */}
-                    {component.status === 'installed' && (
-                      <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-green-400">
-                            <strong>Host:</strong> {component.hostName}
+                      
+                      {component.ports.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-slate-500 mb-1">Ports:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {component.ports.map((port, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs border-slate-700 text-slate-400">
+                                {port}
+                              </Badge>
+                            ))}
                           </div>
-                          <div className="text-green-400">
-                            <strong>Uptime:</strong> {component.uptime}
-                          </div>
-                          {component.cpuUsage && (
-                            <div className="text-green-400">
-                              <strong>CPU:</strong> {component.cpuUsage}%
-                            </div>
-                          )}
-                          {component.memoryUsage && (
-                            <div className="text-green-400">
-                              <strong>Memory:</strong> {component.memoryUsage}%
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    )}
-                    
-                    {/* Action Buttons */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="text-xs border-slate-600 text-slate-300">
-                          {component.architecture.join(', ')}
+                      )}
+                      
+                      <div className="flex justify-between items-center">
+                        <Badge variant="outline" className={`text-xs border-slate-600 ${
+                          component.type === 'collector' ? 'text-blue-400' :
+                          component.type === 'storage' ? 'text-green-400' :
+                          component.type === 'visualization' ? 'text-purple-400' : 'text-orange-400'
+                        }`}>
+                          {component.type}
                         </Badge>
-                        {!networkStatus.external && component.downloadUrl && (
-                          <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-400">
-                            Cached
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <div className="flex space-x-2">
-                        {component.status === 'available' && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => installComponent(component)}
-                            disabled={!selectedHost || !networkStatus.internal}
-                            className={`${selectedHost && networkStatus.internal ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-600 cursor-not-allowed'}`}
-                            title={
-                              !selectedHost ? 'Please select a host first' : 
-                              !networkStatus.internal ? 'Network connection required' : 
-                              'Install component'
-                            }
-                          >
-                            <Download className="h-3 w-3 mr-1" />
-                            Install
-                          </Button>
-                        )}
-                        
-                        {component.status === 'installing' && (
-                          <Button size="sm" variant="outline" disabled className="border-slate-600">
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Installing
-                          </Button>
-                        )}
-                        
-                        {component.status === 'installed' && (
-                          <>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="border-green-600 text-green-400"
-                              onClick={() => toggleComponent(component.id, 'start')}
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Start
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="border-yellow-600 text-yellow-400"
-                              onClick={() => toggleComponent(component.id, 'stop')}
-                            >
-                              <Pause className="h-3 w-3 mr-1" />
-                              Stop
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="border-red-600 text-red-400"
-                              onClick={() => uninstallComponent(component.id)}
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              Remove
-                            </Button>
-                          </>
-                        )}
-                        
-                        {component.status === 'failed' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="border-red-600 text-red-400"
-                            onClick={() => installComponent(component)}
-                            disabled={!selectedHost || !networkStatus.internal}
-                          >
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            Retry
-                          </Button>
-                        )}
-                        
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Settings className="h-3 w-3" />
+                        <Button 
+                          onClick={() => installComponent(component.id)}
+                          disabled={!selectedHost || component.status === 'installing'}
+                          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {component.status === 'installing' ? (
+                            <>
+                              <Clock className="h-4 w-4 mr-2 animate-spin" />
+                              Installing...
+                            </>
+                          ) : (
+                            <>
+                              <Download className="h-4 w-4 mr-2" />
+                              Install
+                            </>
+                          )}
                         </Button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Host Management Tab */}
-        <TabsContent value="hosts" className="space-y-6">
-          <HostSelection />
-        </TabsContent>
-
-        {/* Installed Components Tab */}
-        <TabsContent value="installed" className="space-y-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Installed Components</CardTitle>
-              <CardDescription className="text-slate-400">
-                Manage and monitor your installed monitoring components
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {components.filter(c => c.status === 'installed').map((component) => (
-                  <div key={component.id} className="p-4 border border-slate-600 rounded-lg hover:border-blue-500 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        {getTypeIcon(component.type)}
-                        <div>
-                          <h3 className="font-semibold text-white">{component.name}</h3>
-                          <p className="text-sm text-slate-400">
-                            v{component.version} • {component.hostName} • Port {component.port} • {component.uptime}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right text-sm">
-                          <p className="text-slate-400">CPU: <span className="text-white">{component.cpuUsage}%</span></p>
-                          <p className="text-slate-400">Memory: <span className="text-white">{component.memoryUsage}%</span></p>
-                        </div>
-                        
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="outline" className="border-green-600 text-green-400">
-                            <Play className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-yellow-600 text-yellow-400">
-                            <Pause className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-slate-600 text-slate-300">
-                            <Settings className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-red-600 text-red-400">
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 ))}
-                
-                {components.filter(c => c.status === 'installed').length === 0 && (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-300 mb-2">No Installed Components</h3>
-                    <p className="text-slate-400 mb-4">
-                      Install components from the Component Library to get started.
-                    </p>
-                    <Button 
-                      onClick={() => setActiveTab('components')}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      <Package className="h-4 w-4 mr-2" />
-                      Browse Components
-                    </Button>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Installation Jobs Tab */}
-        <TabsContent value="installations" className="space-y-6">
+        {/* 主机管理标签页 */}
+        <TabsContent value="hosts" className="space-y-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
-              <CardTitle className="text-white">Installation History</CardTitle>
-              <CardDescription className="text-slate-400">
-                Track installation progress and history
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white">Remote Host Management</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Manage cloud and internal servers for component deployment
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowAddHost(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Host
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {installations.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Activity className="h-12 w-12 text-slate-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-300 mb-2">No Installation Jobs</h3>
-                    <p className="text-slate-400">
-                      Installation history will appear here once you start installing components.
-                    </p>
-                  </div>
-                ) : (
-                  installations.map((job) => (
-                    <div key={job.id} className="p-4 border border-slate-600 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="font-semibold text-white">{job.componentName}</h4>
-                          <p className="text-sm text-slate-400">{job.hostName}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {hosts.map((host) => (
+                  <Card key={host.id} className="border border-slate-600 hover:border-blue-500 transition-all">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          {getHostTypeIcon(host.type)}
+                          <div>
+                            <h3 className="font-semibold text-white">{host.name}</h3>
+                            <p className="text-sm text-slate-400">{host.ip}:{host.sshPort}</p>
+                            {host.region && (
+                              <p className="text-xs text-slate-500">{host.region} • {host.provider}</p>
+                            )}
+                          </div>
                         </div>
-                        <Badge className={`${
-                          job.status === 'completed' ? 'bg-green-600' :
-                          job.status === 'installing' ? 'bg-blue-600' :
-                          job.status === 'failed' ? 'bg-red-600' : 'bg-yellow-600'
-                        } text-white`}>
-                          {job.status}
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          {getStatusIcon(host.status)}
+                          <Badge className={`${
+                            host.type === 'cloud' ? 'bg-blue-600' :
+                            host.type === 'internal' ? 'bg-green-600' : 'bg-purple-600'
+                          } text-white text-xs`}>
+                            {host.type}
+                          </Badge>
+                        </div>
                       </div>
                       
-                      {job.status === 'installing' && (
-                        <div className="mb-2">
-                          <Progress value={job.progress} className="h-2" />
-                          <p className="text-xs text-slate-500 mt-1">{job.progress}% complete</p>
+                      <div className="space-y-2 mb-4">
+                        <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
+                          <div><strong>OS:</strong> {host.os}</div>
+                          <div><strong>Arch:</strong> {host.architecture}</div>
+                          <div><strong>User:</strong> {host.username}</div>
+                          <div><strong>Auth:</strong> {host.authMethod === 'key' ? 'SSH Key' : 'Password'}</div>
+                        </div>
+                      </div>
+                      
+                      {host.status === 'connected' && (
+                        <div className="space-y-2 mb-4">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-400 flex items-center">
+                              <Cpu className="h-3 w-3 mr-1" />
+                              CPU
+                            </span>
+                            <span className="text-white">{host.resources.cpu}%</span>
+                          </div>
+                          <Progress value={host.resources.cpu} className="h-1" />
+                          
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-400 flex items-center">
+                              <MemoryStick className="h-3 w-3 mr-1" />
+                              Memory
+                            </span>
+                            <span className="text-white">{host.resources.memory}%</span>
+                          </div>
+                          <Progress value={host.resources.memory} className="h-1" />
+                          
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-400 flex items-center">
+                              <HardDrive className="h-3 w-3 mr-1" />
+                              Disk
+                            </span>
+                            <span className="text-white">{host.resources.disk}%</span>
+                          </div>
+                          <Progress value={host.resources.disk} className="h-1" />
                         </div>
                       )}
                       
-                      <div className="text-xs text-slate-500">
-                        <p>Started: {job.startTime}</p>
-                        {job.endTime && <p>Completed: {job.endTime}</p>}
-                        {job.error && <p className="text-red-400">Error: {job.error}</p>}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {host.installedComponents.slice(0, 2).map((comp, idx) => (
+                          <Badge key={idx} className="text-xs bg-purple-600 text-white">
+                            {comp}
+                          </Badge>
+                        ))}
+                        {host.installedComponents.length > 2 && (
+                          <Badge className="text-xs bg-purple-600 text-white">
+                            +{host.installedComponents.length - 2}
+                          </Badge>
+                        )}
                       </div>
+                      
+                      <div className="flex justify-between items-center text-xs text-slate-500 mb-3">
+                        <span>Components: {host.installedComponents.length}</span>
+                        <span>Last seen: {host.lastSeen}</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-1">
+                          {host.networkAccess.internal && (
+                            <Badge variant="outline" className="text-xs border-green-600 text-green-400">
+                              Internal
+                            </Badge>
+                          )}
+                          {host.networkAccess.external && (
+                            <Badge variant="outline" className="text-xs border-blue-600 text-blue-400">
+                              External
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => testHostConnection(host.id)}
+                          >
+                            <Target className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Terminal className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 安装监控标签页 */}
+        <TabsContent value="installations" className="space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Installation Monitor</CardTitle>
+              <CardDescription className="text-slate-400">
+                Real-time monitoring of component installations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {installations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Download className="h-12 w-12 text-slate-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-slate-300 mb-2">No Installations</h3>
+                    <p className="text-slate-400">
+                      Install components to see installation progress here.
+                    </p>
+                  </div>
+                ) : (
+                  installations.map((installation) => (
+                    <div key={installation.id} className="p-4 border border-slate-600 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-white">{installation.componentName}</h3>
+                          <p className="text-sm text-slate-400">
+                            {installation.hostName} • v{installation.version}
+                          </p>
+                        </div>
+                        <Badge className={`${
+                          installation.status === 'completed' ? 'bg-green-600' :
+                          installation.status === 'failed' ? 'bg-red-600' :
+                          'bg-blue-600'
+                        } text-white`}>
+                          {installation.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-slate-400">Progress</span>
+                          <span className="text-white">{installation.progress}%</span>
+                        </div>
+                        <Progress value={installation.progress} className="h-2" />
+                      </div>
+                      
+                      <div className="text-xs text-slate-500">
+                        <p>Started: {installation.startTime}</p>
+                        {installation.endTime && (
+                          <p>Completed: {installation.endTime}</p>
+                        )}
+                        {installation.error && (
+                          <p className="text-red-400 mt-1">Error: {installation.error}</p>
+                        )}
+                      </div>
+                      
+                      {installation.logs.length > 0 && (
+                        <details className="mt-3">
+                          <summary className="text-sm text-blue-400 cursor-pointer">
+                            View Logs ({installation.logs.length} entries)
+                          </summary>
+                          <div className="mt-2 p-2 bg-slate-900 rounded text-xs font-mono text-slate-300 max-h-32 overflow-y-auto">
+                            {installation.logs.map((log, idx) => (
+                              <div key={idx}>{log}</div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
                     </div>
                   ))
                 )}
@@ -1299,7 +938,214 @@ export default function ComponentInstaller() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* 网络诊断标签页 */}
+        <TabsContent value="network" className="space-y-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-white">Network Diagnostics</CardTitle>
+              <CardDescription className="text-slate-400">
+                Monitor network connectivity and performance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Connectivity Status</h3>
+                  
+                  <div className="p-4 border border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-300">Backend API</span>
+                      <div className="flex items-center space-x-2">
+                        {networkStatus.backend === 'online' ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-400" />
+                        )}
+                        <span className={`text-sm ${
+                          networkStatus.backend === 'online' ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {networkStatus.backend}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Latency: {networkStatus.latency.backend}ms
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border border-slate-600 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-slate-300">Internet Access</span>
+                      <div className="flex items-center space-x-2">
+                        {networkStatus.internet === 'online' ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-400" />
+                        )}
+                        <span className={`text-sm ${
+                          networkStatus.internet === 'online' ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {networkStatus.internet}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Latency: {networkStatus.latency.internet}ms
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Host Connectivity</h3>
+                  
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {hosts.map((host) => (
+                      <div key={host.id} className="p-3 border border-slate-600 rounded">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm text-white">{host.name}</span>
+                            <p className="text-xs text-slate-400">{host.ip}</p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(host.status)}
+                            <span className="text-xs text-slate-400">
+                              {host.networkAccess.latency}ms
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* 添加主机对话框 */}
+      <Dialog open={showAddHost} onOpenChange={setShowAddHost}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Remote Host</DialogTitle>
+            <DialogDescription>
+              Configure connection to cloud or internal server
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Host Name</Label>
+                <Input 
+                  value={newHost.name}
+                  onChange={(e) => setNewHost({...newHost, name: e.target.value})}
+                  placeholder="production-server-01"
+                />
+              </div>
+              <div>
+                <Label>IP Address</Label>
+                <Input 
+                  value={newHost.ip}
+                  onChange={(e) => setNewHost({...newHost, ip: e.target.value})}
+                  placeholder="192.168.1.100 or 203.0.113.1"
+                />
+              </div>
+              <div>
+                <Label>Host Type</Label>
+                <select 
+                  value={newHost.type}
+                  onChange={(e) => setNewHost({...newHost, type: e.target.value as any})}
+                  className="w-full p-2 border border-slate-600 bg-slate-700 text-white rounded"
+                >
+                  <option value="internal">Internal Server</option>
+                  <option value="cloud">Cloud Server</option>
+                  <option value="edge">Edge Device</option>
+                </select>
+              </div>
+              <div>
+                <Label>Location</Label>
+                <Input 
+                  value={newHost.location}
+                  onChange={(e) => setNewHost({...newHost, location: e.target.value})}
+                  placeholder="Data Center A / AWS us-east-1"
+                />
+              </div>
+              <div>
+                <Label>SSH Port</Label>
+                <Input 
+                  type="number"
+                  value={newHost.sshPort}
+                  onChange={(e) => setNewHost({...newHost, sshPort: parseInt(e.target.value)})}
+                  placeholder="22"
+                />
+              </div>
+              <div>
+                <Label>Username</Label>
+                <Input 
+                  value={newHost.username}
+                  onChange={(e) => setNewHost({...newHost, username: e.target.value})}
+                  placeholder="root / ubuntu / admin"
+                />
+              </div>
+            </div>
+            
+            {newHost.type === 'cloud' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Cloud Provider</Label>
+                  <Input 
+                    value={newHost.provider}
+                    onChange={(e) => setNewHost({...newHost, provider: e.target.value})}
+                    placeholder="AWS / Azure / GCP / Alibaba"
+                  />
+                </div>
+                <div>
+                  <Label>Region</Label>
+                  <Input 
+                    value={newHost.region}
+                    onChange={(e) => setNewHost({...newHost, region: e.target.value})}
+                    placeholder="us-east-1 / eu-west-1"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <div>
+              <Label>Authentication Method</Label>
+              <select 
+                value={newHost.authMethod}
+                onChange={(e) => setNewHost({...newHost, authMethod: e.target.value as any})}
+                className="w-full p-2 border border-slate-600 bg-slate-700 text-white rounded"
+              >
+                <option value="password">Password</option>
+                <option value="key">SSH Key</option>
+              </select>
+            </div>
+            
+            {newHost.authMethod === 'password' && (
+              <div>
+                <Label>Password</Label>
+                <Input 
+                  type="password"
+                  value={newHost.password}
+                  onChange={(e) => setNewHost({...newHost, password: e.target.value})}
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowAddHost(false)}>
+                Cancel
+              </Button>
+              <Button onClick={addHost}>
+                Add Host
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
