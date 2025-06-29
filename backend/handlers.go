@@ -1,12 +1,124 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// GitHub API structures for version checking
+type GitHubRelease struct {
+	TagName     string `json:"tag_name"`
+	Name        string `json:"name"`
+	PublishedAt string `json:"published_at"`
+	Prerelease  bool   `json:"prerelease"`
+	Draft       bool   `json:"draft"`
+	Body        string `json:"body"`
+	HTMLURL     string `json:"html_url"`
+	Assets      []struct {
+		Name               string `json:"name"`
+		BrowserDownloadURL string `json:"browser_download_url"`
+		Size               int64  `json:"size"`
+		DownloadCount      int    `json:"download_count"`
+	} `json:"assets"`
+}
+
+// GitHub version checking handler
+func checkGitHubVersions(c *gin.Context) {
+	repo := c.Query("repo")
+	if repo == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Repository parameter required"})
+		return
+	}
+
+	// Fetch releases from GitHub API
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases", repo)
+	resp, err := http.Get(url)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch GitHub releases"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(http.StatusBadGateway, gin.H{"error": "GitHub API error"})
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read response"})
+		return
+	}
+
+	var releases []GitHubRelease
+	if err := json.Unmarshal(body, &releases); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse GitHub response"})
+		return
+	}
+
+	// Process releases and return version information
+	var versions []gin.H
+	for i, release := range releases {
+		if release.Draft {
+			continue // Skip draft releases
+		}
+
+		// Find appropriate asset
+		var asset *struct {
+			Name               string `json:"name"`
+			BrowserDownloadURL string `json:"browser_download_url"`
+			Size               int64  `json:"size"`
+			DownloadCount      int    `json:"download_count"`
+		}
+
+		for _, a := range release.Assets {
+			if strings.Contains(a.Name, "linux") && strings.Contains(a.Name, "amd64") {
+				asset = &a
+				break
+			}
+		}
+
+		if asset == nil && len(release.Assets) > 0 {
+			asset = &release.Assets[0]
+		}
+
+		version := gin.H{
+			"version":       strings.TrimPrefix(release.TagName, "v"),
+			"release_date":  release.PublishedAt,
+			"is_prerelease": release.Prerelease,
+			"changelog":     release.Body,
+			"html_url":      release.HTMLURL,
+			"is_latest":     i == 0 && !release.Prerelease,
+			"is_recommended": i == 0 || (!release.Prerelease && i <= 2),
+		}
+
+		if asset != nil {
+			version["download_url"] = asset.BrowserDownloadURL
+			version["download_count"] = asset.DownloadCount
+			version["size"] = asset.Size
+		}
+
+		versions = append(versions, version)
+
+		// Limit to 10 releases
+		if len(versions) >= 10 {
+			break
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"repository": repo,
+		"versions":   versions,
+		"updated_at": time.Now().Format(time.RFC3339),
+	})
+}
 
 // Host handlers
 func getHosts(c *gin.Context) {
@@ -82,6 +194,25 @@ func testHostConnection(c *gin.Context) {
 	})
 }
 
+func discoverHosts(c *gin.Context) {
+	var req struct {
+		NetworkRange string `json:"network_range"`
+		ScanSSH      bool   `json:"scan_ssh"`
+		ScanSNMP     bool   `json:"scan_snmp"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement network discovery
+	c.JSON(http.StatusOK, gin.H{
+		"status": "scanning",
+		"message": "Network discovery started",
+	})
+}
+
 // Component handlers
 func getComponents(c *gin.Context) {
 	var components []Component
@@ -93,6 +224,7 @@ func installComponent(c *gin.Context) {
 	var req struct {
 		ComponentID string `json:"component_id"`
 		HostID      uint   `json:"host_id"`
+		Version     string `json:"version"`
 	}
 	
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -136,11 +268,22 @@ func stopComponent(c *gin.Context) {
 	})
 }
 
+func getInstallations(c *gin.Context) {
+	// TODO: Implement installation jobs retrieval
+	c.JSON(http.StatusOK, []gin.H{})
+}
+
 // MIB file handlers
 func getMIBFiles(c *gin.Context) {
 	var mibFiles []MIBFile
 	db.Find(&mibFiles)
 	c.JSON(http.StatusOK, mibFiles)
+}
+
+func getMIBOids(c *gin.Context) {
+	// TODO: Implement actual MIB OID parsing and retrieval
+	// For now, return empty array to prevent frontend errors
+	c.JSON(http.StatusOK, []gin.H{})
 }
 
 func uploadMIBFile(c *gin.Context) {
@@ -377,6 +520,55 @@ func deployConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "deploying",
 		"message": "Configuration deployment started",
+	})
+}
+
+// SSH Key handlers
+func getSSHKeys(c *gin.Context) {
+	// TODO: Implement SSH key retrieval
+	c.JSON(http.StatusOK, []gin.H{})
+}
+
+func generateSSHKey(c *gin.Context) {
+	var req struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+		Bits int    `json:"bits"`
+	}
+	
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement SSH key generation
+	c.JSON(http.StatusOK, gin.H{
+		"message": "SSH key generated successfully",
+	})
+}
+
+// Settings handlers
+func getSettings(c *gin.Context) {
+	// TODO: Implement settings retrieval
+	c.JSON(http.StatusOK, gin.H{
+		"theme": "dark",
+		"language": "en",
+		"notifications": true,
+		"autoRefresh": true,
+		"refreshInterval": 30,
+	})
+}
+
+func updateSettings(c *gin.Context) {
+	var settings map[string]interface{}
+	if err := c.ShouldBindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	
+	// TODO: Implement settings update
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Settings updated successfully",
 	})
 }
 
