@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Activity, 
   Server, 
@@ -45,7 +46,17 @@ import {
   PieChart,
   LineChart,
   BarChart,
-  Gauge
+  Gauge,
+  User,
+  Lock,
+  Key,
+  Palette,
+  Moon,
+  Sun,
+  Languages,
+  HelpCircle,
+  LogOut,
+  Save
 } from 'lucide-react';
 import ComponentInstaller from '@/components/monitoring/ComponentInstaller';
 import { HostSelection } from '@/components/monitoring/HostSelection';
@@ -58,6 +69,7 @@ import { RealTimeDashboard } from '@/components/dashboard/RealTimeDashboard';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showSettings, setShowSettings] = useState(false);
   const [systemStats, setSystemStats] = useState({
     activeDevices: 24,
     installedComponents: 8,
@@ -67,6 +79,18 @@ export default function Home() {
     memoryUsage: 58,
     diskUsage: 24,
     networkTraffic: 76
+  });
+
+  // Settings state
+  const [settings, setSettings] = useState({
+    theme: 'dark',
+    language: 'en',
+    notifications: true,
+    autoRefresh: true,
+    refreshInterval: 30,
+    compactMode: false,
+    showTooltips: true,
+    enableSounds: false
   });
 
   const quickActions = [
@@ -151,6 +175,16 @@ export default function Home() {
     }
   };
 
+  const handleSettingsSave = () => {
+    // Here you would typically save settings to backend or localStorage
+    console.log('Saving settings:', settings);
+    setShowSettings(false);
+    
+    // Show success message
+    // You could use a toast notification here
+    alert('Settings saved successfully!');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       {/* Header */}
@@ -175,10 +209,216 @@ export default function Home() {
                 <Globe className="h-4 w-4" />
                 <span>24 Devices Online</span>
               </div>
-              <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
+              
+              {/* Settings Dialog */}
+              <Dialog open={showSettings} onOpenChange={setShowSettings}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      System Settings
+                    </DialogTitle>
+                    <DialogDescription>
+                      Configure your monitoring platform preferences and system settings
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="space-y-6 py-4">
+                    {/* Appearance Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Palette className="h-5 w-5" />
+                        Appearance
+                      </h3>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium text-slate-300">Theme</label>
+                          <select 
+                            value={settings.theme}
+                            onChange={(e) => setSettings({...settings, theme: e.target.value})}
+                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                          >
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="auto">Auto</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-slate-300">Language</label>
+                          <select 
+                            value={settings.language}
+                            onChange={(e) => setSettings({...settings, language: e.target.value})}
+                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                          >
+                            <option value="en">English</option>
+                            <option value="zh">中文</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-300">Compact Mode</label>
+                          <input 
+                            type="checkbox" 
+                            checked={settings.compactMode}
+                            onChange={(e) => setSettings({...settings, compactMode: e.target.checked})}
+                            className="rounded"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-300">Show Tooltips</label>
+                          <input 
+                            type="checkbox" 
+                            checked={settings.showTooltips}
+                            onChange={(e) => setSettings({...settings, showTooltips: e.target.checked})}
+                            className="rounded"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notifications Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Bell className="h-5 w-5" />
+                        Notifications
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-300">Enable Notifications</label>
+                          <input 
+                            type="checkbox" 
+                            checked={settings.notifications}
+                            onChange={(e) => setSettings({...settings, notifications: e.target.checked})}
+                            className="rounded"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-300">Sound Alerts</label>
+                          <input 
+                            type="checkbox" 
+                            checked={settings.enableSounds}
+                            onChange={(e) => setSettings({...settings, enableSounds: e.target.checked})}
+                            className="rounded"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Performance Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Zap className="h-5 w-5" />
+                        Performance
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium text-slate-300">Auto Refresh</label>
+                          <input 
+                            type="checkbox" 
+                            checked={settings.autoRefresh}
+                            onChange={(e) => setSettings({...settings, autoRefresh: e.target.checked})}
+                            className="rounded"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium text-slate-300">Refresh Interval (seconds)</label>
+                          <select 
+                            value={settings.refreshInterval}
+                            onChange={(e) => setSettings({...settings, refreshInterval: Number(e.target.value)})}
+                            className="w-full mt-1 bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                            disabled={!settings.autoRefresh}
+                          >
+                            <option value={5}>5 seconds</option>
+                            <option value={10}>10 seconds</option>
+                            <option value={30}>30 seconds</option>
+                            <option value={60}>1 minute</option>
+                            <option value={300}>5 minutes</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Settings */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        Security
+                      </h3>
+                      
+                      <div className="space-y-3">
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300">
+                          <Key className="h-4 w-4 mr-2" />
+                          Change Password
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-slate-600 text-slate-300">
+                          <Lock className="h-4 w-4 mr-2" />
+                          Two-Factor Authentication
+                        </Button>
+                        
+                        <Button variant="outline" className="w-full border-red-600 text-red-400">
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Sign Out All Sessions
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* System Information */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <HelpCircle className="h-5 w-5" />
+                        System Information
+                      </h3>
+                      
+                      <div className="bg-slate-700/50 rounded-lg p-4 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Version:</span>
+                          <span className="text-white">v2.1.0</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Build:</span>
+                          <span className="text-white">2024.01.15</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">License:</span>
+                          <span className="text-white">Enterprise</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Support:</span>
+                          <span className="text-blue-400">Active</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end space-x-2 pt-4 border-t border-slate-700">
+                    <Button variant="outline" onClick={() => setShowSettings(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleSettingsSave} className="bg-blue-600 hover:bg-blue-700">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Settings
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>

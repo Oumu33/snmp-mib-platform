@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Download, 
   CheckCircle, 
@@ -49,10 +50,29 @@ import {
   Target,
   Clock,
   Layers,
-  Plus
+  Plus,
+  GitBranch,
+  Tag,
+  History,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { HostSelection } from './HostSelection';
+
+interface ComponentVersion {
+  version: string;
+  releaseDate: string;
+  isLatest: boolean;
+  isStable: boolean;
+  changelog: string[];
+  downloadUrl: string;
+  systemRequirements: {
+    cpu: string;
+    memory: string;
+    disk: string;
+  };
+}
 
 interface Host {
   id: string;
@@ -85,7 +105,8 @@ interface Component {
   description: string;
   category: 'collector' | 'storage' | 'visualization' | 'alerting';
   status: 'available' | 'installed' | 'updating';
-  version: string;
+  currentVersion?: string;
+  availableVersions: ComponentVersion[];
   dependencies: string[];
   configRequired: boolean;
   ports: number[];
@@ -142,7 +163,60 @@ const components: Component[] = [
     description: 'System metrics collector for monitoring CPU, memory, disk, and network resources',
     category: 'collector',
     status: 'available',
-    version: '1.7.0',
+    currentVersion: '1.7.0',
+    availableVersions: [
+      {
+        version: '1.7.0',
+        releaseDate: '2024-01-15',
+        isLatest: true,
+        isStable: true,
+        changelog: [
+          'Added new filesystem metrics',
+          'Improved memory usage reporting',
+          'Fixed CPU temperature collection on ARM64'
+        ],
+        downloadUrl: 'https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '100m',
+          memory: '50Mi',
+          disk: '100Mi'
+        }
+      },
+      {
+        version: '1.6.1',
+        releaseDate: '2023-12-10',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Security fixes for metric collection',
+          'Performance improvements',
+          'Bug fixes for network interface detection'
+        ],
+        downloadUrl: 'https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '100m',
+          memory: '45Mi',
+          disk: '90Mi'
+        }
+      },
+      {
+        version: '1.6.0',
+        releaseDate: '2023-11-20',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Added support for new kernel metrics',
+          'Improved error handling',
+          'Updated dependencies'
+        ],
+        downloadUrl: 'https://github.com/prometheus/node_exporter/releases/download/v1.6.0/node_exporter-1.6.0.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '100m',
+          memory: '45Mi',
+          disk: '90Mi'
+        }
+      }
+    ],
     dependencies: ['systemd'],
     configRequired: true,
     ports: [9100],
@@ -227,7 +301,43 @@ curl http://localhost:9100/metrics | head -20`
     description: 'SNMP protocol monitoring exporter for network devices like routers and switches',
     category: 'collector',
     status: 'available',
-    version: '0.25.0',
+    currentVersion: '0.25.0',
+    availableVersions: [
+      {
+        version: '0.25.0',
+        releaseDate: '2024-01-10',
+        isLatest: true,
+        isStable: true,
+        changelog: [
+          'Added support for SNMPv3 authentication',
+          'Improved MIB parsing performance',
+          'Fixed memory leaks in long-running instances'
+        ],
+        downloadUrl: 'https://github.com/prometheus/snmp_exporter/releases/download/v0.25.0/snmp_exporter-0.25.0.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '200m',
+          memory: '100Mi',
+          disk: '200Mi'
+        }
+      },
+      {
+        version: '0.24.1',
+        releaseDate: '2023-12-05',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Bug fixes for SNMP timeout handling',
+          'Improved error messages',
+          'Updated SNMP library dependencies'
+        ],
+        downloadUrl: 'https://github.com/prometheus/snmp_exporter/releases/download/v0.24.1/snmp_exporter-0.24.1.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '200m',
+          memory: '90Mi',
+          disk: '180Mi'
+        }
+      }
+    ],
     dependencies: ['net-snmp'],
     configRequired: true,
     ports: [9116],
@@ -243,7 +353,43 @@ curl http://localhost:9100/metrics | head -20`
     description: 'Modern monitoring data collector supporting multiple protocols and data sources, compatible with Telegraf plugins',
     category: 'collector',
     status: 'available',
-    version: '0.3.60',
+    currentVersion: '0.3.60',
+    availableVersions: [
+      {
+        version: '0.3.60',
+        releaseDate: '2024-01-12',
+        isLatest: true,
+        isStable: true,
+        changelog: [
+          'Added new input plugins for cloud services',
+          'Improved configuration validation',
+          'Enhanced error reporting and logging'
+        ],
+        downloadUrl: 'https://github.com/flashcatcloud/categraf/releases/download/v0.3.60/categraf-v0.3.60-linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '100m',
+          memory: '100Mi',
+          disk: '200Mi'
+        }
+      },
+      {
+        version: '0.3.59',
+        releaseDate: '2023-12-20',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Performance improvements for high-frequency metrics',
+          'Bug fixes for SNMP input plugin',
+          'Updated documentation and examples'
+        ],
+        downloadUrl: 'https://github.com/flashcatcloud/categraf/releases/download/v0.3.59/categraf-v0.3.59-linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '100m',
+          memory: '90Mi',
+          disk: '180Mi'
+        }
+      }
+    ],
     dependencies: [],
     configRequired: true,
     ports: [9100],
@@ -254,60 +400,48 @@ curl http://localhost:9100/metrics | head -20`
     }
   },
   {
-    id: 'vminsert',
-    name: 'VMInsert',
-    description: 'VictoriaMetrics data ingestion component for receiving and processing metrics',
-    category: 'storage',
-    status: 'available',
-    version: '1.95.1',
-    dependencies: [],
-    configRequired: true,
-    ports: [8480],
-    systemRequirements: {
-      cpu: '200m',
-      memory: '512Mi',
-      disk: '1Gi'
-    }
-  },
-  {
-    id: 'vmselect',
-    name: 'VMSelect',
-    description: 'VictoriaMetrics query component for reading and querying stored metrics',
-    category: 'storage',
-    status: 'available',
-    version: '1.95.1',
-    dependencies: [],
-    configRequired: true,
-    ports: [8481],
-    systemRequirements: {
-      cpu: '200m',
-      memory: '512Mi',
-      disk: '1Gi'
-    }
-  },
-  {
-    id: 'vmstorage',
-    name: 'VMStorage',
-    description: 'VictoriaMetrics storage component for persisting time series data',
-    category: 'storage',
-    status: 'available',
-    version: '1.95.1',
-    dependencies: [],
-    configRequired: true,
-    ports: [8482, 8400, 8401],
-    systemRequirements: {
-      cpu: '500m',
-      memory: '1Gi',
-      disk: '50Gi'
-    }
-  },
-  {
     id: 'victoriametrics',
     name: 'VictoriaMetrics',
     description: 'High-performance time series database, Prometheus-compatible with long-term storage support',
     category: 'storage',
     status: 'available',
-    version: '1.95.1',
+    currentVersion: '1.95.1',
+    availableVersions: [
+      {
+        version: '1.95.1',
+        releaseDate: '2024-01-08',
+        isLatest: true,
+        isStable: true,
+        changelog: [
+          'Improved query performance for large datasets',
+          'Added new streaming aggregation functions',
+          'Enhanced memory management and reduced RAM usage'
+        ],
+        downloadUrl: 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.95.1/victoria-metrics-linux-amd64-v1.95.1.tar.gz',
+        systemRequirements: {
+          cpu: '500m',
+          memory: '1Gi',
+          disk: '10Gi'
+        }
+      },
+      {
+        version: '1.94.0',
+        releaseDate: '2023-12-15',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Added support for new PromQL functions',
+          'Improved data compression algorithms',
+          'Bug fixes for data ingestion edge cases'
+        ],
+        downloadUrl: 'https://github.com/VictoriaMetrics/VictoriaMetrics/releases/download/v1.94.0/victoria-metrics-linux-amd64-v1.94.0.tar.gz',
+        systemRequirements: {
+          cpu: '500m',
+          memory: '900Mi',
+          disk: '10Gi'
+        }
+      }
+    ],
     dependencies: [],
     configRequired: true,
     ports: [8428, 8089, 4242],
@@ -323,7 +457,43 @@ curl http://localhost:9100/metrics | head -20`
     description: 'Open-source visualization and monitoring platform supporting multiple data sources with rich charts and dashboards',
     category: 'visualization',
     status: 'available',
-    version: '10.2.0',
+    currentVersion: '10.2.0',
+    availableVersions: [
+      {
+        version: '10.2.0',
+        releaseDate: '2024-01-05',
+        isLatest: true,
+        isStable: true,
+        changelog: [
+          'New panel types and visualization options',
+          'Improved dashboard performance',
+          'Enhanced alerting capabilities'
+        ],
+        downloadUrl: 'https://dl.grafana.com/oss/release/grafana-10.2.0.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '200m',
+          memory: '200Mi',
+          disk: '1Gi'
+        }
+      },
+      {
+        version: '10.1.5',
+        releaseDate: '2023-12-01',
+        isLatest: false,
+        isStable: true,
+        changelog: [
+          'Security updates and bug fixes',
+          'Improved plugin management',
+          'Performance optimizations'
+        ],
+        downloadUrl: 'https://dl.grafana.com/oss/release/grafana-10.1.5.linux-amd64.tar.gz',
+        systemRequirements: {
+          cpu: '200m',
+          memory: '180Mi',
+          disk: '900Mi'
+        }
+      }
+    ],
     dependencies: ['sqlite3'],
     configRequired: true,
     ports: [3000],
@@ -331,38 +501,6 @@ curl http://localhost:9100/metrics | head -20`
       cpu: '200m',
       memory: '200Mi',
       disk: '1Gi'
-    }
-  },
-  {
-    id: 'vmalert',
-    name: 'VMAlert',
-    description: 'VictoriaMetrics alert manager supporting PromQL alert rules and multiple notification methods',
-    category: 'alerting',
-    status: 'available',
-    version: '1.95.1',
-    dependencies: [],
-    configRequired: true,
-    ports: [8880],
-    systemRequirements: {
-      cpu: '100m',
-      memory: '128Mi',
-      disk: '500Mi'
-    }
-  },
-  {
-    id: 'alertmanager',
-    name: 'Alertmanager',
-    description: 'Prometheus Alertmanager for handling alerts sent by client applications such as Prometheus server',
-    category: 'alerting',
-    status: 'available',
-    version: '0.26.0',
-    dependencies: [],
-    configRequired: true,
-    ports: [9093],
-    systemRequirements: {
-      cpu: '100m',
-      memory: '128Mi',
-      disk: '500Mi'
     }
   }
 ];
@@ -422,18 +560,27 @@ const availableHosts: Host[] = [
 export default function ComponentInstaller() {
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
   const [selectedHost, setSelectedHost] = useState<Host | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showConfigGuide, setShowConfigGuide] = useState(false);
   const [showUsageGuide, setShowUsageGuide] = useState(false);
   const [showHostSelection, setShowHostSelection] = useState(false);
+  const [showVersionSelection, setShowVersionSelection] = useState(false);
   const [showInstallProgress, setShowInstallProgress] = useState(false);
   const [installationSteps, setInstallationSteps] = useState<InstallationStep[]>([]);
   const [activeTab, setActiveTab] = useState('installer');
-  const [showHostManagement, setShowHostManagement] = useState(false);
   const { toast } = useToast();
 
   const handleInstall = (component: Component) => {
     setSelectedComponent(component);
+    // Set default to latest version
+    const latestVersion = component.availableVersions.find(v => v.isLatest);
+    setSelectedVersion(latestVersion?.version || component.availableVersions[0]?.version || '');
+    setShowVersionSelection(true);
+  };
+
+  const handleVersionConfirm = () => {
+    setShowVersionSelection(false);
     setShowHostSelection(true);
   };
 
@@ -443,8 +590,29 @@ export default function ComponentInstaller() {
     startInstallation();
   };
 
+  const handleUpdate = (component: Component) => {
+    setSelectedComponent(component);
+    const latestVersion = component.availableVersions.find(v => v.isLatest);
+    setSelectedVersion(latestVersion?.version || '');
+    
+    toast({
+      title: "Starting Update",
+      description: `Updating ${component.name} to version ${latestVersion?.version}...`,
+    });
+    
+    // Simulate update process
+    setTimeout(() => {
+      toast({
+        title: "Update Complete",
+        description: `${component.name} has been updated successfully.`,
+      });
+    }, 2000);
+  };
+
   const startInstallation = () => {
-    if (!selectedComponent || !selectedHost) return;
+    if (!selectedComponent || !selectedHost || !selectedVersion) return;
+
+    const selectedVersionInfo = selectedComponent.availableVersions.find(v => v.version === selectedVersion);
 
     const steps: InstallationStep[] = [
       {
@@ -459,7 +627,7 @@ export default function ComponentInstaller() {
         title: 'Download Component',
         status: 'pending',
         progress: 0,
-        message: `Downloading ${selectedComponent.name} v${selectedComponent.version}`
+        message: `Downloading ${selectedComponent.name} v${selectedVersion}`
       },
       {
         id: 'install',
@@ -525,7 +693,7 @@ export default function ComponentInstaller() {
     // Installation complete
     toast({
       title: "Installation Complete",
-      description: `${selectedComponent?.name} has been successfully installed on ${selectedHost?.hostname}.`,
+      description: `${selectedComponent?.name} v${selectedVersion} has been successfully installed on ${selectedHost?.hostname}.`,
     });
 
     // Auto show configuration guide
@@ -622,6 +790,16 @@ export default function ComponentInstaller() {
     }
   };
 
+  const getVersionBadge = (version: ComponentVersion) => {
+    if (version.isLatest) {
+      return <Badge className="bg-green-600 text-white text-xs">Latest</Badge>;
+    }
+    if (version.isStable) {
+      return <Badge className="bg-blue-600 text-white text-xs">Stable</Badge>;
+    }
+    return <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">Legacy</Badge>;
+  };
+
   const categorizedComponents = components.reduce((acc, component) => {
     if (!acc[component.category]) {
       acc[component.category] = [];
@@ -643,7 +821,7 @@ export default function ComponentInstaller() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-white">Intelligent Component Installer</h2>
           <p className="text-slate-400">
-            One-click installation of monitoring system components with complete configuration guides and usage instructions
+            One-click installation of monitoring system components with version selection and complete configuration guides
           </p>
         </div>
       </div>
@@ -693,8 +871,18 @@ export default function ComponentInstaller() {
                             <div>
                               <CardTitle className="text-lg text-white">{component.name}</CardTitle>
                               <div className="flex items-center space-x-2 mt-1">
-                                <span className="text-sm text-slate-400">v{component.version}</span>
+                                <span className="text-sm text-slate-400">
+                                  {component.status === 'installed' && component.currentVersion 
+                                    ? `v${component.currentVersion}` 
+                                    : `v${component.availableVersions[0]?.version}`
+                                  }
+                                </span>
                                 {getStatusBadge(component.status)}
+                                {component.availableVersions.length > 1 && (
+                                  <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+                                    {component.availableVersions.length} versions
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -704,6 +892,24 @@ export default function ComponentInstaller() {
                       <CardContent className="space-y-4">
                         <CardDescription className="text-slate-300">{component.description}</CardDescription>
                         
+                        {/* Version Information */}
+                        {component.status === 'installed' && component.currentVersion && (
+                          <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-green-400">Currently Installed</p>
+                                <p className="text-xs text-slate-400">Version {component.currentVersion}</p>
+                              </div>
+                              {component.availableVersions.find(v => v.isLatest)?.version !== component.currentVersion && (
+                                <div className="flex items-center space-x-2">
+                                  <ArrowUp className="h-4 w-4 text-yellow-400" />
+                                  <span className="text-xs text-yellow-400">Update Available</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         {/* System Requirements */}
                         <div className="p-3 bg-slate-700/50 rounded-lg">
                           <p className="text-sm font-medium text-slate-300 mb-2">System Requirements:</p>
@@ -780,14 +986,25 @@ export default function ComponentInstaller() {
                           )}
                           
                           {component.status === 'installed' && (
-                            <Button 
-                              variant="outline"
-                              onClick={() => handleUninstall(component)}
-                              className="flex-1 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Uninstall
-                            </Button>
+                            <>
+                              {component.availableVersions.find(v => v.isLatest)?.version !== component.currentVersion && (
+                                <Button 
+                                  onClick={() => handleUpdate(component)}
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                >
+                                  <ArrowUp className="h-4 w-4 mr-2" />
+                                  Update
+                                </Button>
+                              )}
+                              <Button 
+                                variant="outline"
+                                onClick={() => handleUninstall(component)}
+                                className="flex-1 border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Uninstall
+                              </Button>
+                            </>
                           )}
                           
                           {component.status === 'updating' && (
@@ -796,6 +1013,72 @@ export default function ComponentInstaller() {
                               Updating...
                             </Button>
                           )}
+
+                          {/* Version History Button */}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+                              >
+                                <History className="h-4 w-4 mr-1" />
+                                Versions
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-3xl">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <GitBranch className="h-5 w-5" />
+                                  {component.name} - Version History
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Available versions and release information
+                                </DialogDescription>
+                              </DialogHeader>
+                              
+                              <ScrollArea className="max-h-[60vh] pr-4">
+                                <div className="space-y-4">
+                                  {component.availableVersions.map((version, index) => (
+                                    <div key={version.version} className="p-4 border border-slate-600 rounded-lg">
+                                      <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center space-x-3">
+                                          <Tag className="h-4 w-4 text-blue-400" />
+                                          <div>
+                                            <h4 className="font-semibold text-white">v{version.version}</h4>
+                                            <p className="text-sm text-slate-400">{version.releaseDate}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          {getVersionBadge(version)}
+                                          {component.currentVersion === version.version && (
+                                            <Badge className="bg-green-600 text-white text-xs">Current</Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <p className="text-sm font-medium text-slate-300">Changes:</p>
+                                        <ul className="list-disc list-inside space-y-1 text-sm text-slate-400">
+                                          {version.changelog.map((change, idx) => (
+                                            <li key={idx}>{change}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                      
+                                      <div className="mt-3 pt-3 border-t border-slate-700">
+                                        <div className="grid grid-cols-3 gap-2 text-xs text-slate-500">
+                                          <div><strong>CPU:</strong> {version.systemRequirements.cpu}</div>
+                                          <div><strong>Memory:</strong> {version.systemRequirements.memory}</div>
+                                          <div><strong>Disk:</strong> {version.systemRequirements.disk}</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </ScrollArea>
+                            </DialogContent>
+                          </Dialog>
 
                           {/* Configuration Guide Button */}
                           {component.configGuide && (
@@ -1013,6 +1296,92 @@ export default function ComponentInstaller() {
         </TabsContent>
       </Tabs>
 
+      {/* Version Selection Dialog */}
+      <Dialog open={showVersionSelection} onOpenChange={setShowVersionSelection}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitBranch className="h-5 w-5" />
+              Select Version to Install
+            </DialogTitle>
+            <DialogDescription>
+              Choose the version of {selectedComponent?.name} to install
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-3">
+              {selectedComponent?.availableVersions.map((version) => (
+                <div 
+                  key={version.version}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedVersion === version.version 
+                      ? 'border-blue-500 bg-blue-500/10' 
+                      : 'border-slate-600 hover:border-blue-400'
+                  }`}
+                  onClick={() => setSelectedVersion(version.version)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full border-2 ${
+                        selectedVersion === version.version 
+                          ? 'border-blue-500 bg-blue-500' 
+                          : 'border-slate-400'
+                      }`}>
+                        {selectedVersion === version.version && (
+                          <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white">v{version.version}</h4>
+                        <p className="text-sm text-slate-400">{version.releaseDate}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {getVersionBadge(version)}
+                    </div>
+                  </div>
+                  
+                  <div className="ml-7 space-y-2">
+                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-500">
+                      <div><strong>CPU:</strong> {version.systemRequirements.cpu}</div>
+                      <div><strong>Memory:</strong> {version.systemRequirements.memory}</div>
+                      <div><strong>Disk:</strong> {version.systemRequirements.disk}</div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium text-slate-300 mb-1">Changes:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-slate-400">
+                        {version.changelog.slice(0, 2).map((change, idx) => (
+                          <li key={idx}>{change}</li>
+                        ))}
+                        {version.changelog.length > 2 && (
+                          <li className="text-slate-500">...and {version.changelog.length - 2} more</li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setShowVersionSelection(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleVersionConfirm}
+                disabled={!selectedVersion}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Continue with v{selectedVersion}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Host Selection Dialog */}
       <Dialog open={showHostSelection} onOpenChange={setShowHostSelection}>
         <DialogContent className="max-w-4xl">
@@ -1022,7 +1391,7 @@ export default function ComponentInstaller() {
               Select Deployment Host
             </DialogTitle>
             <DialogDescription>
-              Choose the target host to install {selectedComponent?.name}
+              Choose the target host to install {selectedComponent?.name} v{selectedVersion}
             </DialogDescription>
           </DialogHeader>
           
@@ -1116,7 +1485,7 @@ export default function ComponentInstaller() {
               Installation Progress
             </DialogTitle>
             <DialogDescription>
-              Installing {selectedComponent?.name} on {selectedHost?.hostname}
+              Installing {selectedComponent?.name} v{selectedVersion} on {selectedHost?.hostname}
             </DialogDescription>
           </DialogHeader>
           
