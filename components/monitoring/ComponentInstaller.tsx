@@ -48,9 +48,11 @@ import {
   Users,
   Target,
   Clock,
-  Layers
+  Layers,
+  Plus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { HostSelection } from './HostSelection';
 
 interface Host {
   id: string;
@@ -427,6 +429,7 @@ export default function ComponentInstaller() {
   const [showInstallProgress, setShowInstallProgress] = useState(false);
   const [installationSteps, setInstallationSteps] = useState<InstallationStep[]>([]);
   const [activeTab, setActiveTab] = useState('installer');
+  const [showHostManagement, setShowHostManagement] = useState(false);
   const { toast } = useToast();
 
   const handleInstall = (component: Component) => {
@@ -1005,103 +1008,8 @@ export default function ComponentInstaller() {
         </TabsContent>
 
         <TabsContent value="hosts" className="space-y-4">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-white flex items-center">
-                    <Server className="h-5 w-5 mr-2" />
-                    Host Management
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Manage deployment hosts for monitoring components
-                  </CardDescription>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Hosts
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                {availableHosts.map((host) => (
-                  <Card 
-                    key={host.id} 
-                    className="border border-slate-600 hover:border-blue-400 transition-all cursor-pointer"
-                    onClick={() => {
-                      // Navigate to host details or management
-                      toast({
-                        title: "Host Selected",
-                        description: `Selected ${host.hostname} for management.`,
-                      });
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          {getHostStatusIcon(host.status)}
-                          <div>
-                            <h3 className="font-semibold text-white">{host.hostname}</h3>
-                            <p className="text-sm text-slate-400">{host.ip} • {host.os}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge className={`${
-                            host.status === 'connected' ? 'bg-green-600' : 'bg-red-600'
-                          } text-white`}>
-                            {host.status === 'connected' ? 'Connected' : 'Disconnected'}
-                          </Badge>
-                          <ArrowRight className="h-4 w-4 text-blue-400" />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 text-sm mb-3">
-                        <div>
-                          <p className="text-slate-500">Specs</p>
-                          <p className="text-white">{host.specs.cpu}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500">Memory</p>
-                          <p className="text-white">{host.specs.memory}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500">Storage</p>
-                          <p className="text-white">{host.specs.disk}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="flex flex-wrap gap-1">
-                          {host.installedComponents.slice(0, 3).map((comp, idx) => (
-                            <Badge key={idx} className="text-xs bg-purple-600 text-white">
-                              {comp}
-                            </Badge>
-                          ))}
-                          {host.installedComponents.length > 3 && (
-                            <Badge className="text-xs bg-purple-600 text-white">
-                              +{host.installedComponents.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Terminal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Host Management Section */}
+          <HostSelection />
         </TabsContent>
       </Tabs>
 
