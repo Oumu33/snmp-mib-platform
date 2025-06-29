@@ -22,14 +22,14 @@ func main() {
 	}
 
 	// Auto migrate schemas
-	db.AutoMigrate(&Host{}, &Component{}, &MIBFile{}, &MIBServerPath{}, &MIBArchive{}, &Device{}, &Alert{}, &Config{}, &User{}, &AuditLog{})
+	db.AutoMigrate(&Host{}, &Component{}, &MIBFile{}, &MIBServerPath{}, &MIBArchive{}, &Device{}, &Alert{}, &Config{}, &User{}, &AuditLog{}, &Installation{}, &SSHKey{})
 
 	// Initialize Gin router
 	r := gin.Default()
 
 	// CORS middleware
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowOrigins:     []string{"http://localhost:12300"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
@@ -113,7 +113,7 @@ func main() {
 		api.GET("/system/health", getSystemHealth)
 	}
 
-	log.Println("SNMP Monitor Pro API server starting on :8080")
+	log.Println("SNMP Monitor Pro API server starting on :17880")
 	log.Println("Features enabled:")
 	log.Println("  ✓ Real network connectivity detection")
 	log.Println("  ✓ SSH-based remote host management")
@@ -124,7 +124,7 @@ func main() {
 	log.Println("  ✓ Alert management and notifications")
 	log.Println("  ✓ System health monitoring")
 	
-	r.Run(":8080")
+	r.Run(":17880")
 }
 
 // Health check endpoint
