@@ -50,7 +50,11 @@ import {
   Key,
   Terminal,
   Edit,
-  Wifi
+  Wifi,
+  Signal,
+  Router,
+  Cloud,
+  Link
 } from 'lucide-react';
 import { HostSelection } from './HostSelection';
 
@@ -82,6 +86,9 @@ interface Component {
   githubRepo?: string;
   documentation?: string;
   configTemplate?: string;
+  releaseDate?: string;
+  downloadCount?: number;
+  size?: string;
 }
 
 interface Host {
@@ -101,6 +108,11 @@ interface Host {
   authMethod: 'password' | 'key';
   lastSeen: string;
   installedComponents: string[];
+  networkAccess: {
+    internal: boolean;
+    external: boolean;
+    lastCheck: string;
+  };
 }
 
 interface InstallationJob {
@@ -115,6 +127,14 @@ interface InstallationJob {
   endTime?: string;
   logs: string[];
   error?: string;
+}
+
+interface NetworkStatus {
+  internal: boolean;
+  external: boolean;
+  githubApi: boolean;
+  lastCheck: string;
+  errors: string[];
 }
 
 // 完整的组件列表 - 从GitHub动态获取版本信息
@@ -299,6 +319,20 @@ export default function ComponentInstaller() {
   const [error, setError] = useState<string | null>(null);
   const [showHostDialog, setShowHostDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('components');
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
+    internal: false,
+    external: false,
+    githubApi: false,
+    lastCheck: '',
+    errors: []
+  });
+
+  // 网络连接检测
+  useEffect(() => {
+    checkNetworkConnectivity();
+    const interval = setInterval(checkNetworkConnectivity, 30000); // 每30秒检查一次
+    return () => clearInterval(interval);
+  }, []);
 
   // 初始化组件数据
   useEffect(() => {
@@ -306,6 +340,56 @@ export default function ComponentInstaller() {
     fetchHosts();
     fetchInstallations();
   }, []);
+
+  const checkNetworkConnectivity = async () => {
+    const status: NetworkStatus = {
+      internal: false,
+      external: false,
+      githubApi: false,
+      lastCheck: new Date().toISOString(),
+      errors: []
+    };
+
+    try {
+      // 检查内网连接 - 测试后端API
+      try {
+        const response = await fetch('/api/v1/system/health', { 
+          method: 'GET',
+          timeout: 5000 
+        } as any);
+        status.internal = response.ok;
+        if (!response.ok) {
+          status.errors.push('Backend API connection failed');
+        }
+      } catch (err) {
+        status.internal = false;
+        status.errors.push('Internal network connection failed');
+      }
+
+      // 检查外网连接 - 测试GitHub API
+      try {
+        const response = await fetch('https://api.github.com/rate_limit', {
+          method: 'GET',
+          timeout: 10000
+        } as any);
+        status.external = response.ok;
+        status.githubApi = response.ok;
+        if (!response.ok) {
+          status.errors.push('GitHub API access failed - version updates may be limited');
+        }
+      } catch (err) {
+        status.external = false;
+        status.githubApi = false;
+        status.errors.push('External network connection failed - using cached version data');
+      }
+
+      setNetworkStatus(status);
+    } catch (err) {
+      console.error('Network connectivity check failed:', err);
+      status.errors.push('Network connectivity check failed');
+      setNetworkStatus(status);
+    }
+  };
 
   const initializeComponents = async () => {
     try {
@@ -317,9 +401,15 @@ export default function ComponentInstaller() {
         COMPONENT_DEFINITIONS.map(async (comp) => {
           try {
             // 从GitHub API获取最新版本
-            const response = await fetch(`/api/v1/github/versions?repo=${comp.githubRepo}`);
+            const response = await fetch(`/api/v1/github/versions?repo=${comp.githubRepo}`, {
+              timeout: 15000
+            } as any);
+            
             let latestVersion = 'latest';
             let downloadUrl = '';
+            let releaseDate = '';
+            let downloadCount = 0;
+            let size = '';
             
             if (response.ok) {
               const data = await response.json();
@@ -327,6 +417,9 @@ export default function ComponentInstaller() {
                 const latest = data.versions.find((v: any) => v.is_latest) || data.versions[0];
                 latestVersion = latest.version;
                 downloadUrl = latest.download_url || '';
+                releaseDate = latest.release_date || '';
+                downloadCount = latest.download_count || 0;
+                size = latest.size ? `${(latest.size / 1024 / 1024).toFixed(1)} MB` : '';
               }
             }
             
@@ -335,6 +428,9 @@ export default function ComponentInstaller() {
               version: latestVersion,
               latestVersion: latestVersion,
               downloadUrl: downloadUrl,
+              releaseDate: releaseDate,
+              downloadCount: downloadCount,
+              size: size,
               status: 'available' as const
             };
           } catch (err) {
@@ -344,6 +440,9 @@ export default function ComponentInstaller() {
               version: 'latest',
               latestVersion: 'latest',
               downloadUrl: '',
+              releaseDate: '',
+              downloadCount: 0,
+              size: '',
               status: 'available' as const
             };
           }
@@ -360,6 +459,9 @@ export default function ComponentInstaller() {
         version: 'latest',
         latestVersion: 'latest',
         downloadUrl: '',
+        releaseDate: '',
+        downloadCount: 0,
+        size: '',
         status: 'available' as const
       })));
     } finally {
@@ -372,7 +474,16 @@ export default function ComponentInstaller() {
       const response = await fetch('/api/v1/hosts');
       if (response.ok) {
         const data = await response.json();
-        setHosts(data || []);
+        // 为每个主机添加网络访问检测
+        const hostsWithNetwork = data.map((host: any) => ({
+          ...host,
+          networkAccess: {
+            internal: true, // 假设内网可达
+            external: networkStatus.external, // 基于平台外网状态
+            lastCheck: new Date().toISOString()
+          }
+        }));
+        setHosts(hostsWithNetwork || []);
       } else {
         throw new Error('Failed to fetch hosts');
       }
@@ -425,6 +536,16 @@ export default function ComponentInstaller() {
     }
   };
 
+  const getNetworkStatusIcon = () => {
+    if (networkStatus.internal && networkStatus.external) {
+      return <Globe className="h-4 w-4 text-green-400" />;
+    } else if (networkStatus.internal) {
+      return <Wifi className="h-4 w-4 text-yellow-400" />;
+    } else {
+      return <AlertTriangle className="h-4 w-4 text-red-400" />;
+    }
+  };
+
   const filteredComponents = components.filter(component => {
     const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          component.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -440,6 +561,12 @@ export default function ComponentInstaller() {
   const installComponent = async (component: Component) => {
     if (!selectedHost) {
       setError('Please select a target host first before installing components.');
+      return;
+    }
+
+    // 检查网络连接
+    if (!networkStatus.internal) {
+      setError('Internal network connection required for component installation.');
       return;
     }
 
@@ -461,7 +588,9 @@ export default function ComponentInstaller() {
           host_id: selectedHost,
           version: component.version,
           auto_start: true,
-          enable_metrics: true
+          enable_metrics: true,
+          download_url: component.downloadUrl,
+          network_mode: networkStatus.external ? 'external' : 'internal'
         })
       });
 
@@ -557,8 +686,59 @@ export default function ComponentInstaller() {
 
   return (
     <div className="space-y-6">
+      {/* Network Status Alert */}
+      {(!networkStatus.internal || !networkStatus.external) && (
+        <Alert className={`${!networkStatus.internal ? 'border-red-500 bg-red-500/10' : 'border-yellow-500 bg-yellow-500/10'}`}>
+          {getNetworkStatusIcon()}
+          <AlertDescription className={`${!networkStatus.internal ? 'text-red-400' : 'text-yellow-400'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>Network Status:</strong> 
+                {!networkStatus.internal && ' Internal network connection failed - backend services unavailable'}
+                {networkStatus.internal && !networkStatus.external && ' External network limited - using cached component versions'}
+                {networkStatus.errors.length > 0 && (
+                  <div className="text-xs mt-1">
+                    {networkStatus.errors.join(', ')}
+                  </div>
+                )}
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="border-current text-current"
+                onClick={checkNetworkConnectivity}
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-400">Network Status</p>
+                <p className="text-lg font-bold text-white flex items-center">
+                  {getNetworkStatusIcon()}
+                  <span className="ml-2">
+                    {networkStatus.internal && networkStatus.external ? 'Online' :
+                     networkStatus.internal ? 'Limited' : 'Offline'}
+                  </span>
+                </p>
+              </div>
+              <div className="text-xs text-slate-500">
+                <div>Internal: {networkStatus.internal ? '✓' : '✗'}</div>
+                <div>External: {networkStatus.external ? '✓' : '✗'}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -654,7 +834,7 @@ export default function ComponentInstaller() {
                 <div>
                   <CardTitle className="text-white">Component Installation</CardTitle>
                   <CardDescription className="text-slate-400">
-                    Select a target host and install monitoring components directly
+                    Select a target host and install monitoring components with real-time version updates
                   </CardDescription>
                 </div>
                 <Button 
@@ -679,6 +859,7 @@ export default function ComponentInstaller() {
                     {connectedHosts.map(host => (
                       <option key={host.id} value={host.id}>
                         {host.name} ({host.ip}) - {host.os} {host.architecture}
+                        {host.networkAccess && ` • ${host.networkAccess.internal ? 'Internal' : ''}${host.networkAccess.external ? '+External' : ''}`}
                       </option>
                     ))}
                   </select>
@@ -701,11 +882,11 @@ export default function ComponentInstaller() {
                     onChange={(e) => setSelectedType(e.target.value)}
                     className="w-full bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
                   >
-                    <option value="all">All Types</option>
-                    <option value="collector">Data Collectors</option>
-                    <option value="storage">Storage Systems</option>
-                    <option value="visualization">Visualization</option>
-                    <option value="alerting">Alerting</option>
+                    <option value="all">All Types ({components.length})</option>
+                    <option value="collector">Data Collectors ({components.filter(c => c.type === 'collector').length})</option>
+                    <option value="storage">Storage Systems ({components.filter(c => c.type === 'storage').length})</option>
+                    <option value="visualization">Visualization ({components.filter(c => c.type === 'visualization').length})</option>
+                    <option value="alerting">Alerting ({components.filter(c => c.type === 'alerting').length})</option>
                   </select>
                 </div>
                 
@@ -755,7 +936,7 @@ export default function ComponentInstaller() {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-blue-400 mr-3" />
-              <span className="text-slate-400">Loading components and fetching latest versions...</span>
+              <span className="text-slate-400">Loading components and fetching latest versions from GitHub...</span>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -770,7 +951,16 @@ export default function ComponentInstaller() {
                         {getTypeIcon(component.type)}
                         <div>
                           <h3 className="font-semibold text-white text-lg">{component.name}</h3>
-                          <p className="text-sm text-slate-400">v{component.version}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <Badge className="bg-blue-600 text-white text-xs">
+                              v{component.version}
+                            </Badge>
+                            {component.releaseDate && (
+                              <span className="text-xs text-slate-500">
+                                {new Date(component.releaseDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
                           {component.githubRepo && (
                             <a 
                               href={`https://github.com/${component.githubRepo}`}
@@ -817,6 +1007,12 @@ export default function ComponentInstaller() {
                       <div className="grid grid-cols-2 gap-2 text-xs text-slate-500">
                         <div><strong>Port:</strong> {component.port}</div>
                         <div><strong>Service:</strong> {component.serviceName}</div>
+                        {component.size && (
+                          <div><strong>Size:</strong> {component.size}</div>
+                        )}
+                        {component.downloadCount > 0 && (
+                          <div><strong>Downloads:</strong> {component.downloadCount.toLocaleString()}</div>
+                        )}
                         {component.isCluster && (
                           <div className="col-span-2">
                             <strong>Cluster:</strong> {component.clusterComponents?.join(', ')}
@@ -881,6 +1077,11 @@ export default function ComponentInstaller() {
                         <Badge variant="outline" className="text-xs border-slate-600 text-slate-300">
                           {component.architecture.join(', ')}
                         </Badge>
+                        {!networkStatus.external && component.downloadUrl && (
+                          <Badge variant="outline" className="text-xs border-yellow-600 text-yellow-400">
+                            Cached
+                          </Badge>
+                        )}
                       </div>
                       
                       <div className="flex space-x-2">
@@ -888,9 +1089,13 @@ export default function ComponentInstaller() {
                           <Button 
                             size="sm" 
                             onClick={() => installComponent(component)}
-                            disabled={!selectedHost}
-                            className={`${selectedHost ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-600 cursor-not-allowed'}`}
-                            title={!selectedHost ? 'Please select a host first' : 'Install component'}
+                            disabled={!selectedHost || !networkStatus.internal}
+                            className={`${selectedHost && networkStatus.internal ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-600 cursor-not-allowed'}`}
+                            title={
+                              !selectedHost ? 'Please select a host first' : 
+                              !networkStatus.internal ? 'Network connection required' : 
+                              'Install component'
+                            }
                           >
                             <Download className="h-3 w-3 mr-1" />
                             Install
@@ -942,7 +1147,7 @@ export default function ComponentInstaller() {
                             variant="outline" 
                             className="border-red-600 text-red-400"
                             onClick={() => installComponent(component)}
-                            disabled={!selectedHost}
+                            disabled={!selectedHost || !networkStatus.internal}
                           >
                             <RefreshCw className="h-3 w-3 mr-1" />
                             Retry
@@ -988,7 +1193,7 @@ export default function ComponentInstaller() {
                         <div>
                           <h3 className="font-semibold text-white">{component.name}</h3>
                           <p className="text-sm text-slate-400">
-                            {component.hostName} • Port {component.port} • {component.uptime}
+                            v{component.version} • {component.hostName} • Port {component.port} • {component.uptime}
                           </p>
                         </div>
                       </div>
