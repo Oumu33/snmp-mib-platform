@@ -423,6 +423,189 @@ curl http://localhost:9116/snmp`
     ]
   },
   {
+    id: 'categraf',
+    name: 'Categraf',
+    description: '现代化的监控数据采集器，支持多种协议和数据源，兼容Telegraf插件',
+    category: 'collector',
+    status: 'available',
+    version: '0.3.60',
+    dependencies: [],
+    configRequired: true,
+    ports: [9100],
+    systemRequirements: {
+      cpu: '100m',
+      memory: '100Mi',
+      disk: '200Mi'
+    },
+    configGuide: {
+      title: 'Categraf 配置指南',
+      description: '配置Categraf进行多协议数据采集',
+      steps: [
+        {
+          title: '1. 创建主配置文件',
+          description: '配置Categraf的全局设置',
+          code: `# 创建配置目录
+sudo mkdir -p /etc/categraf/conf.d
+
+# 创建主配置文件
+sudo tee /etc/categraf/config.toml << 'EOF'
+[global]
+hostname = ""
+omit_hostname = false
+precision = "s"
+interval = 15
+providers = ["local"]
+
+[writer_opt]
+batch = 2000
+chan_size = 10000
+
+[[writers]]
+url = "http://localhost:8428/api/v1/write"
+
+[log]
+file_name = "stdout"
+level = "INFO"
+EOF`,
+          note: '根据您的时序数据库调整writer配置',
+          type: 'info'
+        },
+        {
+          title: '2. 配置SNMP插件',
+          description: '配置SNMP设备监控',
+          code: `# 创建SNMP配置文件
+sudo mkdir -p /etc/categraf/conf.d/inputs.snmp
+sudo tee /etc/categraf/conf.d/inputs.snmp/snmp.toml << 'EOF'
+[[inputs.snmp]]
+  agents = ["192.168.1.1:161"]
+  version = 2
+  community = "public"
+  interval = "60s"
+  timeout = "10s"
+  retries = 3
+  
+  [inputs.snmp.tags]
+    device_type = "router"
+    location = "datacenter"
+  
+  # 系统信息
+  [[inputs.snmp.field]]
+    name = "uptime"
+    oid = "1.3.6.1.2.1.1.3.0"
+    conversion = "float"
+  
+  # 接口表格
+  [[inputs.snmp.table]]
+    name = "interface"
+    inherit_tags = ["agent_host"]
+    oid = "1.3.6.1.2.1.2.2"
+    
+    [[inputs.snmp.table.field]]
+      name = "ifInOctets"
+      oid = "1.3.6.1.2.1.2.2.1.10"
+      conversion = "float"
+EOF`,
+          note: '使用配置生成器可以生成更完整的SNMP配置',
+          type: 'info'
+        },
+        {
+          title: '3. 配置系统监控',
+          description: '启用系统资源监控',
+          code: `# 创建系统监控配置
+sudo tee /etc/categraf/conf.d/inputs.cpu/cpu.toml << 'EOF'
+[[inputs.cpu]]
+  percpu = true
+  totalcpu = true
+  collect_cpu_time = false
+  report_active = false
+EOF
+
+sudo tee /etc/categraf/conf.d/inputs.mem/mem.toml << 'EOF'
+[[inputs.mem]]
+  # 无需额外配置
+EOF
+
+sudo tee /etc/categraf/conf.d/inputs.disk/disk.toml << 'EOF'
+[[inputs.disk]]
+  ignore_fs = ["tmpfs", "devtmpfs", "devfs", "iso9660", "overlay", "aufs", "squashfs"]
+EOF`,
+          note: '可以根据需要启用更多系统监控插件',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'Categraf 使用指南',
+      description: '如何使用Categraf进行多协议监控',
+      quickStart: [
+        {
+          title: '验证安装',
+          description: '检查Categraf是否正常运行',
+          code: `# 检查服务状态
+sudo systemctl status categraf
+
+# 测试配置
+/usr/local/bin/categraf --test --configs /etc/categraf
+
+# 查看指标输出
+curl http://localhost:9100/metrics | head -20`
+        },
+        {
+          title: '配置文件结构',
+          description: '了解Categraf配置文件组织',
+          code: `# 配置文件结构
+/etc/categraf/
+├── config.toml              # 主配置文件
+└── conf.d/                  # 插件配置目录
+    ├── inputs.cpu/          # CPU监控
+    ├── inputs.mem/          # 内存监控
+    ├── inputs.disk/         # 磁盘监控
+    ├── inputs.snmp/         # SNMP监控
+    └── inputs.mysql/        # MySQL监控`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '添加新的监控目标',
+          description: '配置新的设备或服务监控',
+          steps: [
+            '在conf.d目录下创建对应的插件配置',
+            '配置目标地址和认证信息',
+            '设置采集间隔和标签',
+            '重启Categraf服务'
+          ]
+        },
+        {
+          title: '自定义指标标签',
+          description: '为指标添加自定义标签',
+          steps: [
+            '在插件配置中添加tags部分',
+            '设置环境、位置等标识标签',
+            '配置动态标签映射',
+            '验证标签是否正确添加'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '插件生态',
+        content: 'Categraf兼容大部分Telegraf插件，可以监控数据库、中间件、云服务等多种数据源。'
+      },
+      {
+        type: 'info',
+        title: '配置管理',
+        content: '使用conf.d目录结构可以更好地组织和管理不同类型的监控配置。'
+      },
+      {
+        type: 'warning',
+        title: '资源控制',
+        content: '合理设置采集间隔和批量大小，避免对目标系统造成过大压力。'
+      }
+    ]
+  },
+  {
     id: 'victoriametrics',
     name: 'VictoriaMetrics',
     description: '高性能时序数据库，兼容Prometheus，支持长期存储和高可用',
@@ -563,6 +746,222 @@ curl 'http://localhost:8428/api/v1/query_range?query=up&start=2024-01-01T00:00:0
         type: 'warning',
         title: '资源规划',
         content: '根据数据量规划存储空间，建议为数据目录配置独立的磁盘分区。'
+      }
+    ]
+  },
+  {
+    id: 'vmstorage',
+    name: 'VMStorage',
+    description: 'VictoriaMetrics集群存储节点，负责数据持久化和查询',
+    category: 'storage',
+    status: 'available',
+    version: '1.95.1',
+    dependencies: [],
+    configRequired: true,
+    ports: [8482, 8400],
+    systemRequirements: {
+      cpu: '1000m',
+      memory: '2Gi',
+      disk: '50Gi'
+    },
+    configGuide: {
+      title: 'VMStorage 配置指南',
+      description: '配置VictoriaMetrics集群存储节点',
+      steps: [
+        {
+          title: '1. 存储节点配置',
+          description: '配置VMStorage基本参数',
+          code: `# 创建配置文件
+sudo tee /etc/victoriametrics/vmstorage.conf << 'EOF'
+-storageDataPath=/var/lib/vmstorage
+-httpListenAddr=:8482
+-vminsertAddr=:8400
+-retentionPeriod=12
+-memory.allowedPercent=80
+-search.maxConcurrentRequests=16
+EOF`,
+          note: '存储节点需要更多内存用于数据缓存',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'VMStorage 使用指南',
+      description: '如何管理VictoriaMetrics存储节点',
+      quickStart: [
+        {
+          title: '验证存储节点',
+          description: '检查存储节点状态',
+          code: `# 检查服务状态
+sudo systemctl status vmstorage
+
+# 检查存储统计
+curl http://localhost:8482/metrics | grep vm_`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '存储扩容',
+          description: '扩展存储容量',
+          steps: [
+            '添加新的存储磁盘',
+            '更新存储路径配置',
+            '重启存储服务',
+            '验证数据分布'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '集群部署',
+        content: 'VMStorage是VictoriaMetrics集群的核心组件，建议部署多个实例以实现高可用。'
+      },
+      {
+        type: 'warning',
+        title: '数据安全',
+        content: '定期备份存储数据，配置RAID以防止硬件故障导致的数据丢失。'
+      }
+    ]
+  },
+  {
+    id: 'vminsert',
+    name: 'VMInsert',
+    description: 'VictoriaMetrics集群写入节点，负责接收和分发数据',
+    category: 'storage',
+    status: 'available',
+    version: '1.95.1',
+    dependencies: [],
+    configRequired: true,
+    ports: [8480],
+    systemRequirements: {
+      cpu: '500m',
+      memory: '512Mi',
+      disk: '1Gi'
+    },
+    configGuide: {
+      title: 'VMInsert 配置指南',
+      description: '配置VictoriaMetrics集群写入节点',
+      steps: [
+        {
+          title: '1. 写入节点配置',
+          description: '配置VMInsert连接存储节点',
+          code: `# 创建配置文件
+sudo tee /etc/victoriametrics/vminsert.conf << 'EOF'
+-httpListen=:8480
+-storageNode=localhost:8400
+-replicationFactor=1
+-maxLabelsPerTimeseries=30
+-maxLabelValueLen=256
+EOF`,
+          note: '配置存储节点地址和复制因子',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'VMInsert 使用指南',
+      description: '如何配置数据写入节点',
+      quickStart: [
+        {
+          title: '验证写入节点',
+          description: '测试数据写入功能',
+          code: `# 检查服务状态
+sudo systemctl status vminsert
+
+# 测试数据写入
+curl -X POST http://localhost:8480/api/v1/write`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '负载均衡',
+          description: '配置多个写入节点',
+          steps: [
+            '部署多个VMInsert实例',
+            '配置负载均衡器',
+            '更新Prometheus配置',
+            '验证数据分布'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '高可用',
+        content: '部署多个VMInsert实例并使用负载均衡器可以提高写入可用性。'
+      }
+    ]
+  },
+  {
+    id: 'vmselect',
+    name: 'VMSelect',
+    description: 'VictoriaMetrics集群查询节点，负责数据查询和聚合',
+    category: 'storage',
+    status: 'available',
+    version: '1.95.1',
+    dependencies: [],
+    configRequired: true,
+    ports: [8481],
+    systemRequirements: {
+      cpu: '500m',
+      memory: '1Gi',
+      disk: '1Gi'
+    },
+    configGuide: {
+      title: 'VMSelect 配置指南',
+      description: '配置VictoriaMetrics集群查询节点',
+      steps: [
+        {
+          title: '1. 查询节点配置',
+          description: '配置VMSelect连接存储节点',
+          code: `# 创建配置文件
+sudo tee /etc/victoriametrics/vmselect.conf << 'EOF'
+-httpListen=:8481
+-storageNode=localhost:8482
+-search.maxConcurrentRequests=32
+-search.maxQueryDuration=30s
+-search.maxPointsPerTimeseries=30000
+EOF`,
+          note: '调整查询参数以优化性能',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'VMSelect 使用指南',
+      description: '如何配置数据查询节点',
+      quickStart: [
+        {
+          title: '验证查询节点',
+          description: '测试数据查询功能',
+          code: `# 检查服务状态
+sudo systemctl status vmselect
+
+# 测试数据查询
+curl 'http://localhost:8481/api/v1/query?query=up'`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '查询优化',
+          description: '优化查询性能',
+          steps: [
+            '调整并发查询数量',
+            '设置查询超时时间',
+            '配置查询缓存',
+            '监控查询性能'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '查询性能',
+        content: '增加VMSelect实例数量可以提高查询并发能力和响应速度。'
       }
     ]
   },
@@ -745,6 +1144,242 @@ URL: http://localhost:3000
         content: '生产环境中应配置HTTPS、修改默认密码，并限制匿名访问。'
       }
     ]
+  },
+  {
+    id: 'vmalert',
+    name: 'VMAlert',
+    description: 'VictoriaMetrics告警管理器，支持PromQL告警规则和多种通知方式',
+    category: 'alerting',
+    status: 'available',
+    version: '1.95.1',
+    dependencies: [],
+    configRequired: true,
+    ports: [8880],
+    systemRequirements: {
+      cpu: '100m',
+      memory: '128Mi',
+      disk: '500Mi'
+    },
+    configGuide: {
+      title: 'VMAlert 配置指南',
+      description: '配置VictoriaMetrics告警管理器',
+      steps: [
+        {
+          title: '1. 基础配置',
+          description: '配置VMAlert基本参数',
+          code: `# 创建配置文件
+sudo tee /etc/victoriametrics/vmalert.conf << 'EOF'
+-datasource.url=http://localhost:8428
+-notifier.url=http://localhost:9093
+-rule=/etc/vmalert/rules/*.yml
+-httpListenAddr=:8880
+-evaluationInterval=15s
+-external.label=cluster=prod
+EOF`,
+          note: '配置数据源和告警管理器地址',
+          type: 'info'
+        },
+        {
+          title: '2. 创建告警规则',
+          description: '配置监控告警规则',
+          code: `# 创建告警规则目录
+sudo mkdir -p /etc/vmalert/rules
+
+# 创建告警规则文件
+sudo tee /etc/vmalert/rules/node.yml << 'EOF'
+groups:
+  - name: node.rules
+    rules:
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.instance }} is down"
+          description: "Node {{ $labels.instance }} has been down for more than 5 minutes."
+      
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 10 minutes."
+EOF`,
+          note: '根据实际需求调整告警规则和阈值',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'VMAlert 使用指南',
+      description: '如何使用VMAlert管理告警',
+      quickStart: [
+        {
+          title: '验证告警服务',
+          description: '检查VMAlert是否正常运行',
+          code: `# 检查服务状态
+sudo systemctl status vmalert
+
+# 查看告警规则
+curl http://localhost:8880/api/v1/rules
+
+# 查看活跃告警
+curl http://localhost:8880/api/v1/alerts`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '管理告警规则',
+          description: '添加和修改告警规则',
+          steps: [
+            '编辑告警规则文件',
+            '验证规则语法',
+            '重新加载配置',
+            '测试告警触发'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '规则管理',
+        content: '将告警规则按服务或团队分组，便于管理和维护。'
+      },
+      {
+        type: 'warning',
+        title: '告警风暴',
+        content: '合理设置告警阈值和持续时间，避免产生过多的误报告警。'
+      }
+    ]
+  },
+  {
+    id: 'alertmanager',
+    name: 'Alertmanager',
+    description: 'Prometheus生态的告警管理器，支持告警分组、抑制和多种通知渠道',
+    category: 'alerting',
+    status: 'available',
+    version: '0.26.0',
+    dependencies: [],
+    configRequired: true,
+    ports: [9093],
+    systemRequirements: {
+      cpu: '100m',
+      memory: '128Mi',
+      disk: '500Mi'
+    },
+    configGuide: {
+      title: 'Alertmanager 配置指南',
+      description: '配置Prometheus告警管理器',
+      steps: [
+        {
+          title: '1. 基础配置',
+          description: '配置Alertmanager基本设置',
+          code: `# 创建配置文件
+sudo tee /etc/alertmanager/alertmanager.yml << 'EOF'
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alertmanager@company.com'
+
+route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+
+receivers:
+  - name: 'web.hook'
+    email_configs:
+      - to: 'admin@company.com'
+        subject: 'Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'dev', 'instance']
+EOF`,
+          note: '配置SMTP服务器和通知接收者',
+          type: 'info'
+        },
+        {
+          title: '2. 配置通知渠道',
+          description: '设置多种通知方式',
+          code: `# 添加Slack通知
+receivers:
+  - name: 'slack-notifications'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts'
+        title: 'Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+# 添加钉钉通知
+  - name: 'dingtalk-notifications'
+    webhook_configs:
+      - url: 'https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN'
+        send_resolved: true`,
+          note: '根据需要配置不同的通知渠道',
+          type: 'info'
+        }
+      ]
+    },
+    usageGuide: {
+      title: 'Alertmanager 使用指南',
+      description: '如何使用Alertmanager管理告警通知',
+      quickStart: [
+        {
+          title: '验证告警管理器',
+          description: '检查Alertmanager是否正常运行',
+          code: `# 检查服务状态
+sudo systemctl status alertmanager
+
+# 查看告警状态
+curl http://localhost:9093/api/v1/alerts
+
+# 测试配置
+/usr/local/bin/amtool config check --config.file=/etc/alertmanager/alertmanager.yml`
+        }
+      ],
+      commonTasks: [
+        {
+          title: '告警静默',
+          description: '临时静默特定告警',
+          steps: [
+            '通过Web界面或API创建静默规则',
+            '设置静默时间和匹配条件',
+            '验证告警是否被静默',
+            '管理和删除静默规则'
+          ]
+        }
+      ]
+    },
+    deploymentTips: [
+      {
+        type: 'tip',
+        title: '告警分组',
+        content: '合理配置告警分组可以减少通知数量，避免告警风暴。'
+      },
+      {
+        type: 'info',
+        title: '高可用',
+        content: '部署多个Alertmanager实例可以实现告警管理的高可用性。'
+      }
+    ]
   }
 ];
 
@@ -817,12 +1452,6 @@ export default function ComponentInstaller() {
   };
 
   const getStatusBadge = (status: Component['status']) => {
-    const variants = {
-      installed: 'default',
-      updating: 'secondary',
-      available: 'outline'
-    } as const;
-
     const colors = {
       installed: 'bg-green-600',
       updating: 'bg-yellow-600',

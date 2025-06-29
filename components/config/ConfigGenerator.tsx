@@ -110,24 +110,26 @@ interface GeneratedConfig {
   selectedOids: string[];
 }
 
-export function ConfigGenerator() {
+export default function ConfigGenerator() {
   const [activeTab, setActiveTab] = useState('oid-selection');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedVendor, setSelectedVendor] = useState('all');
   const [selectedOids, setSelectedOids] = useState<string[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [generatedConfig, setGeneratedConfig] = useState<string>('');
   const [configName, setConfigName] = useState('');
   const [showDeploymentGuide, setShowDeploymentGuide] = useState(false);
 
-  // 从MIB模块获取的完整OID数据（模拟真实数据）
+  // 从MIB模块获取的完整OID数据（大幅扩展，包含更多厂商和OID）
   const mibOids: MIBOid[] = [
+    // 标准MIB OIDs
     {
       id: '1',
       name: 'sysDescr',
       oid: '1.3.6.1.2.1.1.1.0',
       type: 'string',
-      description: 'System description',
+      description: '系统描述信息',
       vendor: 'Standard',
       category: 'System',
       mibFile: 'SNMPv2-MIB',
@@ -140,7 +142,7 @@ export function ConfigGenerator() {
       name: 'sysUpTime',
       oid: '1.3.6.1.2.1.1.3.0',
       type: 'counter',
-      description: 'System uptime in hundredths of seconds',
+      description: '系统运行时间（百分之一秒）',
       vendor: 'Standard',
       category: 'System',
       unit: 'centiseconds',
@@ -151,27 +153,193 @@ export function ConfigGenerator() {
     },
     {
       id: '3',
-      name: 'ifInOctets',
-      oid: '1.3.6.1.2.1.2.2.1.10',
-      type: 'counter',
-      description: 'Interface input octets',
+      name: 'sysContact',
+      oid: '1.3.6.1.2.1.1.4.0',
+      type: 'string',
+      description: '系统联系人信息',
       vendor: 'Standard',
-      category: 'Interface',
-      unit: 'bytes',
-      mibFile: 'IF-MIB',
+      category: 'System',
+      mibFile: 'SNMPv2-MIB',
       selected: false,
-      tableOid: '1.3.6.1.2.1.2.2',
-      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
-      indexPattern: 'ifIndex',
-      metricType: 'counter',
-      labels: ['instance', 'ifIndex', 'ifDescr']
+      metricType: 'gauge',
+      labels: ['instance']
     },
     {
       id: '4',
-      name: 'ifOutOctets',
-      oid: '1.3.6.1.2.1.2.2.1.16',
+      name: 'sysName',
+      oid: '1.3.6.1.2.1.1.5.0',
+      type: 'string',
+      description: '系统名称',
+      vendor: 'Standard',
+      category: 'System',
+      mibFile: 'SNMPv2-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '5',
+      name: 'sysLocation',
+      oid: '1.3.6.1.2.1.1.6.0',
+      type: 'string',
+      description: '系统位置信息',
+      vendor: 'Standard',
+      category: 'System',
+      mibFile: 'SNMPv2-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    // 接口相关OIDs
+    {
+      id: '6',
+      name: 'ifNumber',
+      oid: '1.3.6.1.2.1.2.1.0',
+      type: 'integer',
+      description: '网络接口数量',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '7',
+      name: 'ifIndex',
+      oid: '1.3.6.1.2.1.2.2.1.1',
+      type: 'integer',
+      description: '接口索引',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '8',
+      name: 'ifDescr',
+      oid: '1.3.6.1.2.1.2.2.1.2',
+      type: 'string',
+      description: '接口描述',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '9',
+      name: 'ifType',
+      oid: '1.3.6.1.2.1.2.2.1.3',
+      type: 'integer',
+      description: '接口类型',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '10',
+      name: 'ifMtu',
+      oid: '1.3.6.1.2.1.2.2.1.4',
+      type: 'integer',
+      description: '接口最大传输单元',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'bytes',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '11',
+      name: 'ifSpeed',
+      oid: '1.3.6.1.2.1.2.2.1.5',
+      type: 'gauge',
+      description: '接口速度',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'bps',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '12',
+      name: 'ifPhysAddress',
+      oid: '1.3.6.1.2.1.2.2.1.6',
+      type: 'string',
+      description: '接口物理地址（MAC地址）',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '13',
+      name: 'ifAdminStatus',
+      oid: '1.3.6.1.2.1.2.2.1.7',
+      type: 'integer',
+      description: '接口管理状态',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '14',
+      name: 'ifOperStatus',
+      oid: '1.3.6.1.2.1.2.2.1.8',
+      type: 'integer',
+      description: '接口操作状态',
+      vendor: 'Standard',
+      category: 'Interface',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '15',
+      name: 'ifInOctets',
+      oid: '1.3.6.1.2.1.2.2.1.10',
       type: 'counter',
-      description: 'Interface output octets',
+      description: '接口接收字节数',
       vendor: 'Standard',
       category: 'Interface',
       unit: 'bytes',
@@ -184,11 +352,113 @@ export function ConfigGenerator() {
       labels: ['instance', 'ifIndex', 'ifDescr']
     },
     {
-      id: '5',
-      name: 'cpuUtilization',
-      oid: '1.3.6.1.4.1.9.9.109.1.1.1.1.7',
+      id: '16',
+      name: 'ifInUcastPkts',
+      oid: '1.3.6.1.2.1.2.2.1.11',
+      type: 'counter',
+      description: '接口接收单播包数',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'packets',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'counter',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '17',
+      name: 'ifInErrors',
+      oid: '1.3.6.1.2.1.2.2.1.14',
+      type: 'counter',
+      description: '接口接收错误包数',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'packets',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'counter',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '18',
+      name: 'ifOutOctets',
+      oid: '1.3.6.1.2.1.2.2.1.16',
+      type: 'counter',
+      description: '接口发送字节数',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'bytes',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'counter',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '19',
+      name: 'ifOutUcastPkts',
+      oid: '1.3.6.1.2.1.2.2.1.17',
+      type: 'counter',
+      description: '接口发送单播包数',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'packets',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'counter',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    {
+      id: '20',
+      name: 'ifOutErrors',
+      oid: '1.3.6.1.2.1.2.2.1.20',
+      type: 'counter',
+      description: '接口发送错误包数',
+      vendor: 'Standard',
+      category: 'Interface',
+      unit: 'packets',
+      mibFile: 'IF-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.2.2',
+      snmpIndex: '1.3.6.1.2.1.2.2.1.1',
+      indexPattern: 'ifIndex',
+      metricType: 'counter',
+      labels: ['instance', 'ifIndex', 'ifDescr']
+    },
+    // Cisco 设备 OIDs
+    {
+      id: '21',
+      name: 'cpmCPUTotalPhysicalIndex',
+      oid: '1.3.6.1.4.1.9.9.109.1.1.1.1.2',
+      type: 'integer',
+      description: 'CPU物理索引',
+      vendor: 'Cisco',
+      category: 'Performance',
+      mibFile: 'CISCO-PROCESS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.109.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.109.1.1.1.1.1',
+      indexPattern: 'cpmCPUTotalIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'cpmCPUTotalIndex']
+    },
+    {
+      id: '22',
+      name: 'cpmCPUTotal5sec',
+      oid: '1.3.6.1.4.1.9.9.109.1.1.1.1.3',
       type: 'gauge',
-      description: 'CPU utilization percentage',
+      description: 'CPU 5秒平均利用率',
       vendor: 'Cisco',
       category: 'Performance',
       unit: 'percent',
@@ -201,14 +471,47 @@ export function ConfigGenerator() {
       labels: ['instance', 'cpmCPUTotalIndex']
     },
     {
-      id: '6',
-      name: 'memoryUtilization',
-      oid: '1.3.6.1.4.1.9.9.48.1.1.1.5',
+      id: '23',
+      name: 'cpmCPUTotal1min',
+      oid: '1.3.6.1.4.1.9.9.109.1.1.1.1.4',
       type: 'gauge',
-      description: 'Memory utilization percentage',
+      description: 'CPU 1分钟平均利用率',
       vendor: 'Cisco',
       category: 'Performance',
       unit: 'percent',
+      mibFile: 'CISCO-PROCESS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.109.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.109.1.1.1.1.1',
+      indexPattern: 'cpmCPUTotalIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'cpmCPUTotalIndex']
+    },
+    {
+      id: '24',
+      name: 'cpmCPUTotal5min',
+      oid: '1.3.6.1.4.1.9.9.109.1.1.1.1.5',
+      type: 'gauge',
+      description: 'CPU 5分钟平均利用率',
+      vendor: 'Cisco',
+      category: 'Performance',
+      unit: 'percent',
+      mibFile: 'CISCO-PROCESS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.109.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.109.1.1.1.1.1',
+      indexPattern: 'cpmCPUTotalIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'cpmCPUTotalIndex']
+    },
+    {
+      id: '25',
+      name: 'ciscoMemoryPoolType',
+      oid: '1.3.6.1.4.1.9.9.48.1.1.1.2',
+      type: 'integer',
+      description: '内存池类型',
+      vendor: 'Cisco',
+      category: 'Performance',
       mibFile: 'CISCO-MEMORY-POOL-MIB',
       selected: false,
       tableOid: '1.3.6.1.4.1.9.9.48.1.1.1',
@@ -216,6 +519,374 @@ export function ConfigGenerator() {
       indexPattern: 'ciscoMemoryPoolType',
       metricType: 'gauge',
       labels: ['instance', 'ciscoMemoryPoolType', 'ciscoMemoryPoolName']
+    },
+    {
+      id: '26',
+      name: 'ciscoMemoryPoolName',
+      oid: '1.3.6.1.4.1.9.9.48.1.1.1.3',
+      type: 'string',
+      description: '内存池名称',
+      vendor: 'Cisco',
+      category: 'Performance',
+      mibFile: 'CISCO-MEMORY-POOL-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.48.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.48.1.1.1.1',
+      indexPattern: 'ciscoMemoryPoolType',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoMemoryPoolType', 'ciscoMemoryPoolName']
+    },
+    {
+      id: '27',
+      name: 'ciscoMemoryPoolUsed',
+      oid: '1.3.6.1.4.1.9.9.48.1.1.1.5',
+      type: 'gauge',
+      description: '已使用内存',
+      vendor: 'Cisco',
+      category: 'Performance',
+      unit: 'bytes',
+      mibFile: 'CISCO-MEMORY-POOL-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.48.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.48.1.1.1.1',
+      indexPattern: 'ciscoMemoryPoolType',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoMemoryPoolType', 'ciscoMemoryPoolName']
+    },
+    {
+      id: '28',
+      name: 'ciscoMemoryPoolFree',
+      oid: '1.3.6.1.4.1.9.9.48.1.1.1.6',
+      type: 'gauge',
+      description: '可用内存',
+      vendor: 'Cisco',
+      category: 'Performance',
+      unit: 'bytes',
+      mibFile: 'CISCO-MEMORY-POOL-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.48.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.48.1.1.1.1',
+      indexPattern: 'ciscoMemoryPoolType',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoMemoryPoolType', 'ciscoMemoryPoolName']
+    },
+    // Cisco 环境监控 OIDs
+    {
+      id: '29',
+      name: 'ciscoEnvMonTemperatureDescr',
+      oid: '1.3.6.1.4.1.9.9.13.1.3.1.2',
+      type: 'string',
+      description: '温度传感器描述',
+      vendor: 'Cisco',
+      category: 'Environmental',
+      mibFile: 'CISCO-ENVMON-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.13.1.3.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.13.1.3.1.1',
+      indexPattern: 'ciscoEnvMonTemperatureIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoEnvMonTemperatureIndex', 'ciscoEnvMonTemperatureDescr']
+    },
+    {
+      id: '30',
+      name: 'ciscoEnvMonTemperatureValue',
+      oid: '1.3.6.1.4.1.9.9.13.1.3.1.3',
+      type: 'gauge',
+      description: '温度传感器数值',
+      vendor: 'Cisco',
+      category: 'Environmental',
+      unit: 'celsius',
+      mibFile: 'CISCO-ENVMON-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.13.1.3.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.13.1.3.1.1',
+      indexPattern: 'ciscoEnvMonTemperatureIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoEnvMonTemperatureIndex', 'ciscoEnvMonTemperatureDescr']
+    },
+    {
+      id: '31',
+      name: 'ciscoEnvMonTemperatureState',
+      oid: '1.3.6.1.4.1.9.9.13.1.3.1.6',
+      type: 'integer',
+      description: '温度传感器状态',
+      vendor: 'Cisco',
+      category: 'Environmental',
+      mibFile: 'CISCO-ENVMON-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.9.9.13.1.3.1',
+      snmpIndex: '1.3.6.1.4.1.9.9.13.1.3.1.1',
+      indexPattern: 'ciscoEnvMonTemperatureIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'ciscoEnvMonTemperatureIndex', 'ciscoEnvMonTemperatureDescr']
+    },
+    // Huawei 设备 OIDs
+    {
+      id: '32',
+      name: 'hwEntityCpuUsage',
+      oid: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.5',
+      type: 'gauge',
+      description: 'CPU使用率',
+      vendor: 'Huawei',
+      category: 'Performance',
+      unit: 'percent',
+      mibFile: 'HUAWEI-ENTITY-EXTENT-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.2011.5.25.31.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.1',
+      indexPattern: 'hwEntityIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'hwEntityIndex']
+    },
+    {
+      id: '33',
+      name: 'hwEntityMemUsage',
+      oid: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.7',
+      type: 'gauge',
+      description: '内存使用率',
+      vendor: 'Huawei',
+      category: 'Performance',
+      unit: 'percent',
+      mibFile: 'HUAWEI-ENTITY-EXTENT-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.2011.5.25.31.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.1',
+      indexPattern: 'hwEntityIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'hwEntityIndex']
+    },
+    {
+      id: '34',
+      name: 'hwEntityTemperature',
+      oid: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.11',
+      type: 'gauge',
+      description: '设备温度',
+      vendor: 'Huawei',
+      category: 'Environmental',
+      unit: 'celsius',
+      mibFile: 'HUAWEI-ENTITY-EXTENT-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.2011.5.25.31.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.2011.5.25.31.1.1.1.1.1',
+      indexPattern: 'hwEntityIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'hwEntityIndex']
+    },
+    // HP/HPE 设备 OIDs
+    {
+      id: '35',
+      name: 'hpnicfEntityExtCpuUsage',
+      oid: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1.1.6',
+      type: 'gauge',
+      description: 'CPU使用率',
+      vendor: 'HP',
+      category: 'Performance',
+      unit: 'percent',
+      mibFile: 'HPN-ICF-ENTITY-EXT-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1.1.1',
+      indexPattern: 'hpnicfEntityExtPhysicalIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'hpnicfEntityExtPhysicalIndex']
+    },
+    {
+      id: '36',
+      name: 'hpnicfEntityExtMemUsage',
+      oid: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1.1.8',
+      type: 'gauge',
+      description: '内存使用率',
+      vendor: 'HP',
+      category: 'Performance',
+      unit: 'percent',
+      mibFile: 'HPN-ICF-ENTITY-EXT-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1',
+      snmpIndex: '1.3.6.1.4.1.11.2.14.11.15.2.6.1.1.1.1.1',
+      indexPattern: 'hpnicfEntityExtPhysicalIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'hpnicfEntityExtPhysicalIndex']
+    },
+    // UPS 设备 OIDs
+    {
+      id: '37',
+      name: 'upsIdentManufacturer',
+      oid: '1.3.6.1.2.1.33.1.1.1.0',
+      type: 'string',
+      description: 'UPS制造商',
+      vendor: 'UPS',
+      category: 'System',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '38',
+      name: 'upsIdentModel',
+      oid: '1.3.6.1.2.1.33.1.1.2.0',
+      type: 'string',
+      description: 'UPS型号',
+      vendor: 'UPS',
+      category: 'System',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '39',
+      name: 'upsBatteryStatus',
+      oid: '1.3.6.1.2.1.33.1.2.1.0',
+      type: 'integer',
+      description: '电池状态',
+      vendor: 'UPS',
+      category: 'Power',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '40',
+      name: 'upsSecondsOnBattery',
+      oid: '1.3.6.1.2.1.33.1.2.2.0',
+      type: 'gauge',
+      description: '电池供电时间',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'seconds',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '41',
+      name: 'upsEstimatedMinutesRemaining',
+      oid: '1.3.6.1.2.1.33.1.2.3.0',
+      type: 'gauge',
+      description: '预计剩余时间',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'minutes',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '42',
+      name: 'upsEstimatedChargeRemaining',
+      oid: '1.3.6.1.2.1.33.1.2.4.0',
+      type: 'gauge',
+      description: '电池剩余电量',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'percent',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '43',
+      name: 'upsBatteryVoltage',
+      oid: '1.3.6.1.2.1.33.1.2.5.0',
+      type: 'gauge',
+      description: '电池电压',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'volts',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      metricType: 'gauge',
+      labels: ['instance']
+    },
+    {
+      id: '44',
+      name: 'upsInputVoltage',
+      oid: '1.3.6.1.2.1.33.1.3.3.1.3',
+      type: 'gauge',
+      description: '输入电压',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'volts',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.33.1.3.3',
+      snmpIndex: '1.3.6.1.2.1.33.1.3.3.1.1',
+      indexPattern: 'upsInputLineIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'upsInputLineIndex']
+    },
+    {
+      id: '45',
+      name: 'upsOutputVoltage',
+      oid: '1.3.6.1.2.1.33.1.4.4.1.2',
+      type: 'gauge',
+      description: '输出电压',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'volts',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.33.1.4.4',
+      snmpIndex: '1.3.6.1.2.1.33.1.4.4.1.1',
+      indexPattern: 'upsOutputLineIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'upsOutputLineIndex']
+    },
+    {
+      id: '46',
+      name: 'upsOutputCurrent',
+      oid: '1.3.6.1.2.1.33.1.4.4.1.3',
+      type: 'gauge',
+      description: '输出电流',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'amperes',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.33.1.4.4',
+      snmpIndex: '1.3.6.1.2.1.33.1.4.4.1.1',
+      indexPattern: 'upsOutputLineIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'upsOutputLineIndex']
+    },
+    {
+      id: '47',
+      name: 'upsOutputPower',
+      oid: '1.3.6.1.2.1.33.1.4.4.1.4',
+      type: 'gauge',
+      description: '输出功率',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'watts',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.33.1.4.4',
+      snmpIndex: '1.3.6.1.2.1.33.1.4.4.1.1',
+      indexPattern: 'upsOutputLineIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'upsOutputLineIndex']
+    },
+    {
+      id: '48',
+      name: 'upsOutputPercentLoad',
+      oid: '1.3.6.1.2.1.33.1.4.4.1.5',
+      type: 'gauge',
+      description: '输出负载百分比',
+      vendor: 'UPS',
+      category: 'Power',
+      unit: 'percent',
+      mibFile: 'UPS-MIB',
+      selected: false,
+      tableOid: '1.3.6.1.2.1.33.1.4.4',
+      snmpIndex: '1.3.6.1.2.1.33.1.4.4.1.1',
+      indexPattern: 'upsOutputLineIndex',
+      metricType: 'gauge',
+      labels: ['instance', 'upsOutputLineIndex']
     }
   ];
 
@@ -227,8 +898,8 @@ export function ConfigGenerator() {
       description: '生产级SNMP Exporter完整配置，包含认证、重试、超时等所有参数',
       version: '0.25.0',
       features: ['完整模块配置', '认证支持', '表格遍历', '标签映射', '指标重命名'],
-      requiredOids: ['1', '2', '3', '4'],
-      optionalOids: ['5', '6'],
+      requiredOids: ['1', '2', '15', '18'],
+      optionalOids: ['22', '27', '30'],
       configSample: `# SNMP Exporter 完整配置示例`,
       fullConfigTemplate: `# SNMP Exporter 完整生产配置
 # 生成时间: {{timestamp}}
@@ -385,8 +1056,8 @@ scrape_configs:
       description: '完整的Categraf SNMP插件配置，支持多设备、表格、认证等',
       version: '0.3.60',
       features: ['多设备支持', '表格遍历', '标签映射', '认证配置', '批量采集'],
-      requiredOids: ['1', '2', '3', '4'],
-      optionalOids: ['5', '6'],
+      requiredOids: ['1', '2', '15', '18'],
+      optionalOids: ['22', '27', '30'],
       configSample: `# Categraf SNMP 完整配置示例`,
       fullConfigTemplate: `# Categraf SNMP 完整配置
 # 生成时间: {{timestamp}}
@@ -553,7 +1224,8 @@ curl http://localhost:9100/metrics | grep snmp_`,
     }
   ];
 
-  const categories = ['all', 'System', 'Interface', 'Performance', 'Environmental', 'Security'];
+  const categories = ['all', 'System', 'Interface', 'Performance', 'Environmental', 'Power'];
+  const vendors = ['all', 'Standard', 'Cisco', 'Huawei', 'HP', 'UPS'];
 
   const generateCompleteConfig = () => {
     if (!selectedTemplate || selectedOids.length === 0) return;
@@ -765,7 +1437,8 @@ ${table.fields.map((field: any) =>
                          oid.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          oid.oid.includes(searchTerm);
     const matchesCategory = selectedCategory === 'all' || oid.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesVendor = selectedVendor === 'all' || oid.vendor === selectedVendor;
+    return matchesSearch && matchesCategory && matchesVendor;
   });
 
   const handleOidSelection = (oidId: string) => {
@@ -774,6 +1447,16 @@ ${table.fields.map((field: any) =>
         ? prev.filter(id => id !== oidId)
         : [...prev, oidId]
     );
+  };
+
+  const selectAllByVendor = (vendor: string) => {
+    const vendorOids = mibOids.filter(oid => oid.vendor === vendor).map(oid => oid.id);
+    setSelectedOids(prev => [...new Set([...prev, ...vendorOids])]);
+  };
+
+  const selectAllByCategory = (category: string) => {
+    const categoryOids = mibOids.filter(oid => oid.category === category).map(oid => oid.id);
+    setSelectedOids(prev => [...new Set([...prev, ...categoryOids])]);
   };
 
   return (
@@ -808,10 +1491,10 @@ ${table.fields.map((field: any) =>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400">配置模板</p>
-                <p className="text-2xl font-bold text-purple-400">{configTemplates.length}</p>
+                <p className="text-sm text-slate-400">厂商数量</p>
+                <p className="text-2xl font-bold text-purple-400">{vendors.length - 1}</p>
               </div>
-              <FileCode className="h-8 w-8 text-purple-400" />
+              <Package className="h-8 w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
@@ -853,7 +1536,7 @@ ${table.fields.map((field: any) =>
             <CardHeader>
               <CardTitle className="text-white">MIB OID选择</CardTitle>
               <CardDescription className="text-slate-400">
-                从MIB库中选择要监控的OID指标，支持单个OID和表格遍历
+                从MIB库中选择要监控的OID指标，支持按厂商和类别筛选
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -871,6 +1554,17 @@ ${table.fields.map((field: any) =>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Filter className="h-4 w-4 text-slate-400" />
+                  <select
+                    value={selectedVendor}
+                    onChange={(e) => setSelectedVendor(e.target.value)}
+                    className="bg-slate-700 border border-slate-600 text-white rounded-md px-3 py-2"
+                  >
+                    {vendors.map(vendor => (
+                      <option key={vendor} value={vendor}>
+                        {vendor === 'all' ? '所有厂商' : vendor}
+                      </option>
+                    ))}
+                  </select>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
@@ -890,6 +1584,33 @@ ${table.fields.map((field: any) =>
                 >
                   清空选择
                 </Button>
+              </div>
+
+              {/* 快速选择按钮 */}
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-slate-400">快速选择:</span>
+                {vendors.filter(v => v !== 'all').map(vendor => (
+                  <Button
+                    key={vendor}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => selectAllByVendor(vendor)}
+                    className="border-slate-600 text-slate-300 text-xs"
+                  >
+                    所有{vendor}
+                  </Button>
+                ))}
+                {categories.filter(c => c !== 'all').map(category => (
+                  <Button
+                    key={category}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => selectAllByCategory(category)}
+                    className="border-slate-600 text-slate-300 text-xs"
+                  >
+                    所有{category}
+                  </Button>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -1149,6 +1870,7 @@ ${table.fields.map((field: any) =>
                           return oid ? (
                             <div key={oidId} className="text-xs text-slate-300 flex items-center space-x-2">
                               <span>{oid.name}</span>
+                              <Badge className="text-xs bg-gray-600">{oid.vendor}</Badge>
                               {oid.tableOid && <Badge className="text-xs bg-yellow-600">表格</Badge>}
                             </div>
                           ) : null;
