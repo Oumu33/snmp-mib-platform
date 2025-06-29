@@ -1,17 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    appDir: true,
   },
-  images: { unoptimized: true },
-  async rewrites() {
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: 'http://localhost:17880/api/v1/:path*',
-      },
-    ];
-  },
-};
+  // Ensure Next.js looks for the app directory in the correct location
+  distDir: '.next',
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
