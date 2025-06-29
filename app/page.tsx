@@ -71,29 +71,29 @@ export default function Home() {
 
   const quickActions = [
     { 
-      title: 'Install Components', 
-      description: 'Deploy monitoring components',
+      title: '安装组件', 
+      description: '部署监控组件',
       icon: Download,
       action: () => setActiveTab('installer'),
       color: 'bg-blue-600'
     },
     { 
-      title: 'Upload MIB Files', 
-      description: 'Manage MIB file library',
+      title: '上传MIB文件', 
+      description: '管理MIB文件库',
       icon: Upload,
       action: () => setActiveTab('mib'),
       color: 'bg-green-600'
     },
     { 
-      title: 'Add Device', 
-      description: 'Register new network device',
+      title: '添加设备', 
+      description: '注册新网络设备',
       icon: Router,
       action: () => setActiveTab('monitoring'),
       color: 'bg-purple-600'
     },
     { 
-      title: 'Create Alert', 
-      description: 'Configure monitoring alerts',
+      title: '创建告警', 
+      description: '配置监控告警',
       icon: Bell,
       action: () => setActiveTab('alerts'),
       color: 'bg-orange-600'
@@ -102,38 +102,38 @@ export default function Home() {
 
   const recentActivities = [
     { 
-      action: 'Grafana deployed successfully on server-01', 
-      timestamp: '2 minutes ago', 
+      action: 'Grafana部署成功在server-01', 
+      timestamp: '2分钟前', 
       status: 'success',
       type: 'deployment'
     },
     { 
-      action: 'Node Exporter configuration updated', 
-      timestamp: '5 minutes ago', 
+      action: 'Node Exporter配置已更新', 
+      timestamp: '5分钟前', 
       status: 'info',
       type: 'config'
     },
     { 
-      action: 'SNMP device 192.168.1.1 discovered', 
-      timestamp: '8 minutes ago', 
+      action: 'SNMP设备192.168.1.1已发现', 
+      timestamp: '8分钟前', 
       status: 'success',
       type: 'discovery'
     },
     { 
-      action: 'Alert rule created for CPU threshold', 
-      timestamp: '12 minutes ago', 
+      action: 'CPU阈值告警规则已创建', 
+      timestamp: '12分钟前', 
       status: 'info',
       type: 'alert'
     },
     { 
-      action: 'MIB file cisco-switch.mib uploaded', 
-      timestamp: '15 minutes ago', 
+      action: 'MIB文件cisco-switch.mib已上传', 
+      timestamp: '15分钟前', 
       status: 'success',
       type: 'mib'
     },
     { 
-      action: 'VictoriaMetrics cluster scaled up', 
-      timestamp: '20 minutes ago', 
+      action: 'VictoriaMetrics集群已扩容', 
+      timestamp: '20分钟前', 
       status: 'success',
       type: 'scaling'
     }
@@ -163,21 +163,21 @@ export default function Home() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">SNMP Monitor Pro</h1>
-                <p className="text-sm text-slate-400">Enterprise Network Monitoring Platform</p>
+                <p className="text-sm text-slate-400">企业级网络监控平台</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <Badge variant="outline" className="text-green-400 border-green-400 animate-pulse">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                System Healthy
+                系统健康
               </Badge>
               <div className="flex items-center space-x-2 text-sm text-slate-400">
                 <Globe className="h-4 w-4" />
-                <span>24 Devices Online</span>
+                <span>24台设备在线</span>
               </div>
               <Button variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
                 <Settings className="h-4 w-4 mr-2" />
-                Settings
+                设置
               </Button>
             </div>
           </div>
@@ -190,35 +190,35 @@ export default function Home() {
           <TabsList className="bg-slate-800/50 border border-slate-700 p-1 grid grid-cols-8 w-full">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-blue-600">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Dashboard
+              仪表板
             </TabsTrigger>
             <TabsTrigger value="installer" className="data-[state=active]:bg-blue-600">
               <Download className="h-4 w-4 mr-2" />
-              Installer
+              组件安装
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="data-[state=active]:bg-blue-600">
               <Eye className="h-4 w-4 mr-2" />
-              Monitoring
+              设备监控
             </TabsTrigger>
             <TabsTrigger value="mib" className="data-[state=active]:bg-blue-600">
               <FileText className="h-4 w-4 mr-2" />
-              MIB Manager
+              MIB管理
             </TabsTrigger>
             <TabsTrigger value="alerts" className="data-[state=active]:bg-blue-600">
               <Bell className="h-4 w-4 mr-2" />
-              Alerts
+              告警管理
             </TabsTrigger>
             <TabsTrigger value="config" className="data-[state=active]:bg-blue-600">
               <Settings className="h-4 w-4 mr-2" />
-              Config Gen
+              配置生成
             </TabsTrigger>
             <TabsTrigger value="system" className="data-[state=active]:bg-blue-600">
               <Shield className="h-4 w-4 mr-2" />
-              System
+              系统管理
             </TabsTrigger>
             <TabsTrigger value="realtime" className="data-[state=active]:bg-blue-600">
               <Activity className="h-4 w-4 mr-2" />
-              Real-time
+              实时监控
             </TabsTrigger>
           </TabsList>
 
@@ -230,9 +230,9 @@ export default function Home() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-slate-400">Active Devices</p>
+                      <p className="text-sm text-slate-400">活跃设备</p>
                       <p className="text-3xl font-bold text-white">{systemStats.activeDevices}</p>
-                      <p className="text-xs text-green-400 mt-1">+2 from yesterday</p>
+                      <p className="text-xs text-green-400 mt-1">比昨天+2</p>
                     </div>
                     <div className="p-3 bg-blue-600/20 rounded-lg">
                       <Server className="h-8 w-8 text-blue-400" />
@@ -245,9 +245,9 @@ export default function Home() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-slate-400">Components</p>
+                      <p className="text-sm text-slate-400">已安装组件</p>
                       <p className="text-3xl font-bold text-white">{systemStats.installedComponents}</p>
-                      <p className="text-xs text-green-400 mt-1">All running</p>
+                      <p className="text-xs text-green-400 mt-1">全部运行中</p>
                     </div>
                     <div className="p-3 bg-green-600/20 rounded-lg">
                       <Activity className="h-8 w-8 text-green-400" />
@@ -260,9 +260,9 @@ export default function Home() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-slate-400">Active Alerts</p>
+                      <p className="text-sm text-slate-400">活跃告警</p>
                       <p className="text-3xl font-bold text-white">{systemStats.activeAlerts}</p>
-                      <p className="text-xs text-yellow-400 mt-1">2 critical</p>
+                      <p className="text-xs text-yellow-400 mt-1">2个严重</p>
                     </div>
                     <div className="p-3 bg-yellow-600/20 rounded-lg">
                       <AlertTriangle className="h-8 w-8 text-yellow-400" />
@@ -275,9 +275,9 @@ export default function Home() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-slate-400">System Uptime</p>
+                      <p className="text-sm text-slate-400">系统运行时间</p>
                       <p className="text-3xl font-bold text-white">{systemStats.systemUptime}%</p>
-                      <p className="text-xs text-green-400 mt-1">30 days</p>
+                      <p className="text-xs text-green-400 mt-1">30天</p>
                     </div>
                     <div className="p-3 bg-purple-600/20 rounded-lg">
                       <TrendingUp className="h-8 w-8 text-purple-400" />
@@ -294,10 +294,10 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-white flex items-center">
                       <Zap className="h-5 w-5 mr-2 text-yellow-400" />
-                      Quick Actions
+                      快速操作
                     </CardTitle>
                     <CardDescription className="text-slate-400">
-                      Common tasks and operations
+                      常用任务和操作
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -330,7 +330,7 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-white flex items-center">
                       <Gauge className="h-5 w-5 mr-2 text-blue-400" />
-                      System Resources
+                      系统资源
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -339,7 +339,7 @@ export default function Home() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <Cpu className="h-4 w-4 mr-1" />
-                            CPU Usage
+                            CPU使用率
                           </span>
                           <span className="text-white font-semibold">{systemStats.cpuUsage}%</span>
                         </div>
@@ -349,7 +349,7 @@ export default function Home() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <Monitor className="h-4 w-4 mr-1" />
-                            Memory
+                            内存
                           </span>
                           <span className="text-white font-semibold">{systemStats.memoryUsage}%</span>
                         </div>
@@ -359,7 +359,7 @@ export default function Home() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <HardDrive className="h-4 w-4 mr-1" />
-                            Disk Usage
+                            磁盘使用率
                           </span>
                           <span className="text-white font-semibold">{systemStats.diskUsage}%</span>
                         </div>
@@ -369,7 +369,7 @@ export default function Home() {
                         <div className="flex justify-between text-sm mb-2">
                           <span className="text-slate-400 flex items-center">
                             <Wifi className="h-4 w-4 mr-1" />
-                            Network
+                            网络
                           </span>
                           <span className="text-white font-semibold">{systemStats.networkTraffic}%</span>
                         </div>
@@ -386,7 +386,7 @@ export default function Home() {
                   <CardHeader>
                     <CardTitle className="text-white text-lg flex items-center">
                       <Clock className="h-5 w-5 mr-2" />
-                      Recent Activity
+                      最近活动
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 max-h-96 overflow-y-auto">
